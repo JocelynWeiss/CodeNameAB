@@ -466,7 +466,7 @@ MonoBehaviour:
   disconnectInactiveConnections: 0
   disconnectInactiveTimeout: 60
   authenticator: {fileID: 0}
-  playerPrefab: {fileID: 4214345743145386841, guid: a1cfe38902a31b8448f0fb15c6a8ab71,
+  playerPrefab: {fileID: 3786535601484848229, guid: a7be8794e1a805a4abe1fed5aa7b5afa,
     type: 3}
   autoCreatePlayer: 1
   playerSpawnMethod: 0
@@ -793,6 +793,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_netMan: {fileID: 313177742}
   m_upForce: 300
+  m_rotForce: 100
 --- !u!4 &1120326616
 Transform:
   m_ObjectHideFlags: 0

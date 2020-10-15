@@ -19,6 +19,10 @@ public class GameMan : MonoBehaviour
     private float m_lastConnected = 0.0f;
     private GameObject m_avatar;
     public float m_upForce = 300.0f;
+    public float m_rotForce = 10.0f;
+    private float m_curRotForce = 0.0f;
+
+    private GameObject m_localPlayerHead;
 
 
     public void Awake()
@@ -42,6 +46,11 @@ public class GameMan : MonoBehaviour
             m_logTitle = intro.GetComponent<TextMeshProUGUI>();
             m_logTitle.text = "entry_room_1";
         }
+
+        // Set up the local player
+        OVRCameraRig rig = GameObject.Find("OVRCameraRig").gameObject.GetComponent<OVRCameraRig>();
+        //m_localTrackingSpace = rig.transform.Find("TrackingSpace").gameObject;
+        m_localPlayerHead = rig.transform.Find("TrackingSpace/CenterEyeAnchor").gameObject;
     }
 
 
@@ -69,6 +78,16 @@ public class GameMan : MonoBehaviour
         }
 
         Debug.Log($"---+++ Registering new player @ {Time.fixedTime}s, {newPlayer}");
+    }
+
+
+    private void FixedUpdate()
+    {
+        if (m_curRotForce != 0.0f)
+        {
+            PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+            player.transform.RotateAround(player.transform.position, Vector3.up, m_curRotForce * Time.fixedDeltaTime);
+        }
     }
 
 
@@ -139,6 +158,29 @@ public class GameMan : MonoBehaviour
                 PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
                 player.ChangeAvatarColour();
             }
+        }
+
+        m_curRotForce = 0.0f;
+        if (Input.GetKey(KeyCode.D))
+        {
+            if (m_avatar != null)
+            {
+                m_curRotForce = m_rotForce;
+            }
+        }
+        else if (Input.GetKey(KeyCode.A))
+        {
+            if (m_avatar != null)
+            {
+                m_curRotForce = -m_rotForce;
+            }
+        }
+
+        // Update head
+        if (m_avatar != null)
+        {
+            PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+            player.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
         }
     }
 }

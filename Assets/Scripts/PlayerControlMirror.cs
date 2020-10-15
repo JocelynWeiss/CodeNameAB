@@ -30,7 +30,8 @@ public class PlayerControlMirror : NetworkBehaviour
         m_rb = GetComponent<Rigidbody>();
         if (m_rb == null)
         {
-            Debug.LogError($"OnStartClient @ {Time.fixedTime}s cannot initialize RigidBody.");
+            //Debug.LogError($"OnStartClient @ {Time.fixedTime}s cannot initialize RigidBody.");
+            // Jow: Might happens depending on the prefab...
         }
         /*
         else if (isClient)
