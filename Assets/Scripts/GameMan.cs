@@ -20,7 +20,10 @@ public class GameMan : MonoBehaviour
     private GameObject m_avatar;
     public float m_upForce = 300.0f;
     public float m_rotForce = 10.0f;
+    public float m_YForce = 5.0f;
     private float m_curRotForce = 0.0f;
+    private float m_curYForce = 0.0f;
+    private bool m_tryingConnectAsClient = false;
 
     private GameObject m_localPlayerHead;
 
@@ -88,38 +91,35 @@ public class GameMan : MonoBehaviour
             PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
             player.transform.RotateAround(player.transform.position, Vector3.up, m_curRotForce * Time.fixedDeltaTime);
         }
+
+        if (m_curYForce != 0.0f)
+        {
+            PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+            Vector3 pos = player.transform.position;
+            pos += Vector3.up * m_curYForce * Time.fixedDeltaTime;
+            player.transform.SetPositionAndRotation(pos, player.transform.rotation);
+        }
     }
 
 
     // Update is called once per frame
     void Update()
     {
-        m_logTitle.text = $"{Time.fixedTime}s\n{m_netMan.networkAddress}";
+        m_logTitle.text = $"{Time.fixedTime}s\n{m_netMan.networkAddress}\n{m_lastConnected}s";
 
         if (!m_netMan.isNetworkActive)
         {
-            /*
-            if (Time.fixedTime > 6.0f)
-            {
-                m_netMan.StartClient();
-                //System.UriBuilder uri = new System.UriBuilder();
-                //m_netMan.StartClient(uri.Uri);
-            }
-            */
-            /*
-            // Force start as a client
-            if (Time.fixedTime > m_lastConnected + 6.0f)
-            {
-                m_lastConnected = Time.fixedTime;
-                m_netMan.StartClient();
-            }
-            */
-
             // Force start as a client/host
-            if (Time.fixedTime > m_lastConnected + 6.0f)
+            if (Time.fixedTime > 8.0f) // First client connect failed, force host
             {
                 m_lastConnected = Time.fixedTime;
                 m_netMan.StartHost();
+            }
+            // Try connecting to host as normal client
+            else if ((Time.fixedTime > m_lastConnected + 5.0f) && (m_tryingConnectAsClient == false))
+            {
+                m_tryingConnectAsClient = true;
+                m_netMan.StartClient();
             }
         }
         else
@@ -160,7 +160,21 @@ public class GameMan : MonoBehaviour
             }
         }
 
+        // Spawn entity
+        if (Input.GetKeyUp(KeyCode.R))
+        {
+            //*
+            if (m_avatar != null)
+            {
+                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+                player.SpawnMyTool();
+            }
+            //*/
+        }
+
         m_curRotForce = 0.0f;
+        m_curYForce = 0.0f;
+        /*
         if (Input.GetKey(KeyCode.D))
         {
             if (m_avatar != null)
@@ -175,9 +189,27 @@ public class GameMan : MonoBehaviour
                 m_curRotForce = -m_rotForce;
             }
         }
+        */
+
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
+        m_curRotForce = horizontal * m_rotForce;
+        m_curYForce = vertical * m_YForce;
+
+        if (Input.GetKeyUp(KeyCode.Escape))
+        {
+            Application.Quit();
+        }
 
         // Update head
+        /*
         if (m_avatar != null)
+        {
+            PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+            player.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
+        }
+        */
+        if (NetworkManager.singleton.mode == NetworkManagerMode.Host)
         {
             PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
             player.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);

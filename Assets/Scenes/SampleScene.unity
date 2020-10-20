@@ -461,7 +461,7 @@ MonoBehaviour:
   offlineScene: 
   onlineScene: 
   transport: {fileID: 313177741}
-  networkAddress: 192.168.178.23
+  networkAddress: 192.168.178.50
   maxConnections: 4
   disconnectInactiveConnections: 0
   disconnectInactiveTimeout: 60
@@ -470,7 +470,8 @@ MonoBehaviour:
     type: 3}
   autoCreatePlayer: 1
   playerSpawnMethod: 0
-  spawnPrefabs: []
+  spawnPrefabs:
+  - {fileID: 1060437309053000753, guid: 3688cf7ec5b0703489aecb135425216b, type: 3}
 --- !u!1 &467482175 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100002, guid: 126d619cf4daa52469682f85c1378b4a,
@@ -794,6 +795,7 @@ MonoBehaviour:
   m_netMan: {fileID: 313177742}
   m_upForce: 300
   m_rotForce: 100
+  m_YForce: 5
 --- !u!4 &1120326616
 Transform:
   m_ObjectHideFlags: 0
@@ -978,7 +980,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -20, y: -14}
+  m_AnchoredPosition: {x: -20, y: -15}
   m_SizeDelta: {x: 600, y: 300}
   m_Pivot: {x: 0, y: 0}
 --- !u!1 &1441449889 stripped

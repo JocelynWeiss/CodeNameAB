@@ -120,6 +120,28 @@ public class PlayerControlMirror : NetworkBehaviour
     }
 
 
+    public void SpawnMyTool()
+    {
+        CmdSpawnTool(m_syncColor);
+    }
+
+
+    [Command] void CmdSpawnTool(Color myCol)
+    {
+        GameObject toolPrefab = NetworkManager.singleton.spawnPrefabs[0];
+        if (toolPrefab)
+        {
+            GameObject tool = Instantiate(toolPrefab, transform.position, transform.rotation);
+            tool.transform.position = transform.position + new Vector3(0.0f, -0.2f, 0.0f);
+            ToolsMirror compTool = tool.GetComponent<ToolsMirror>();
+            compTool.m_Owner = this.gameObject;
+            //compTool.SetToolColour(myCol);
+            NetworkServer.Spawn(tool);
+            compTool.SetToolColour(myCol);
+        }
+    }
+
+
     private void FixedUpdate()
     {
         if (m_renderer == null)
