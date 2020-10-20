@@ -26,6 +26,8 @@ public class GameMan : MonoBehaviour
     private bool m_tryingConnectAsClient = false;
 
     private GameObject m_localPlayerHead;
+    OVRHand m_leftHand;
+    OVRHand m_rightHand;
 
 
     public void Awake()
@@ -54,6 +56,14 @@ public class GameMan : MonoBehaviour
         OVRCameraRig rig = GameObject.Find("OVRCameraRig").gameObject.GetComponent<OVRCameraRig>();
         //m_localTrackingSpace = rig.transform.Find("TrackingSpace").gameObject;
         m_localPlayerHead = rig.transform.Find("TrackingSpace/CenterEyeAnchor").gameObject;
+        // Grab hands
+        m_leftHand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftControllerAnchor/OVRHandPrefab").GetComponent<OVRHand>();
+        m_rightHand = GameObject.Find("OVRCameraRig/TrackingSpace/RightHandAnchor/RightControllerAnchor/OVRHandPrefab").GetComponent<OVRHand>();
+
+        if ((m_leftHand == null) || (m_rightHand == null))
+        {
+            Debug.LogError($"GameMan Init Cannot find hands !");
+        }
     }
 
 
@@ -160,6 +170,17 @@ public class GameMan : MonoBehaviour
             }
         }
 
+        // Place player at pos
+        if (Input.GetKeyUp(KeyCode.P))
+        {
+            if (m_avatar != null)
+            {
+                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+                //player.PositionPlayer(new Vector3(0.1f, 1.0f, 1.8f));
+                player.transform.SetPositionAndRotation(new Vector3(0.1f, 1.0f, 1.8f), Quaternion.identity);
+            }
+        }
+
         // Spawn entity
         if (Input.GetKeyUp(KeyCode.R))
         {
@@ -201,18 +222,34 @@ public class GameMan : MonoBehaviour
             Application.Quit();
         }
 
-        // Update head
-        /*
-        if (m_avatar != null)
+        // Check hands
+        if (m_leftHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
         {
             PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-            player.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
+            player.SpawnMyTool();
         }
-        */
+        else if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
+        {
+            PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+            player.SpawnMyTool();
+        }
+
+        // Update head
+#if UNITY_EDITOR
+#else
+        //*
         if (NetworkManager.singleton.mode == NetworkManagerMode.Host)
         {
-            PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-            player.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
+            if (m_avatar != null)
+            {
+                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+                if (player.isServer)
+                {
+                    player.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
+                }
+            }
         }
+        //*/
+#endif
     }
 }

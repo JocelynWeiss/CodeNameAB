@@ -120,6 +120,18 @@ public class PlayerControlMirror : NetworkBehaviour
     }
 
 
+    public void PositionPlayer(Vector3 pos)
+    {
+        CmdPositionPlayer(pos);
+    }
+
+
+    [Command] void CmdPositionPlayer(Vector3 pos)
+    {
+        transform.SetPositionAndRotation(pos, transform.rotation);
+    }
+
+
     public void SpawnMyTool()
     {
         CmdSpawnTool(m_syncColor);
