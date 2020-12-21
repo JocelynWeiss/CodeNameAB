@@ -27,8 +27,18 @@ public class ToolsMirror : NetworkBehaviour
         {
             Debug.LogError($"{gameObject} OnStartClient @ {Time.fixedTime}s cannot initialize renderer.");
         }
+        else
+        {
+            //Debug.Log($"{gameObject} OnStartClient @ {Time.fixedTime}s m_syncColor {m_syncColor}.");
+            m_renderer.material.color = m_syncColor; // To test
+        }
 
         m_spawnTime = Time.fixedTime;
+
+        // This object transform isn't synchronized, add force client side
+        Rigidbody rb = GetComponent<Rigidbody>();
+        Vector3 force = transform.forward * 100.0f;
+        rb.AddForce(force);
     }
 
 
@@ -44,7 +54,8 @@ public class ToolsMirror : NetworkBehaviour
         {
             m_renderer = GetComponent<Renderer>();
         }
-        
+
+        //Debug.Log($"{gameObject} SetToolColour @ {Time.fixedTime}s m_syncColor {m_syncColor} newCol {newCol}");
         m_renderer.material.color = newCol;
         m_syncColor = newCol;
     }

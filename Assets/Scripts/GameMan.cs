@@ -17,7 +17,8 @@ public class GameMan : MonoBehaviour
     public NetworkManager m_netMan;
 
     private float m_lastConnected = 0.0f;
-    private GameObject m_avatar;
+    private GameObject m_avatar; // Deprecated, Todo: remove me
+    private PlayerControlMirror m_myAvatar;
     public float m_upForce = 300.0f;
     public float m_rotForce = 10.0f;
     public float m_YForce = 5.0f;
@@ -70,6 +71,7 @@ public class GameMan : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        m_netMan.networkAddress = "localhost"; // overwrite public field when not at Henigma...
         Debug.Log($"GameMan Init @ {Time.fixedTime}s");
     }
 
@@ -85,12 +87,29 @@ public class GameMan : MonoBehaviour
             player.c = player.m_syncColor;
         }
         */
+
+        PlayerControlMirror player = newPlayer.GetComponent<PlayerControlMirror>();
         if (hasAuthority)
         {
+            newPlayer.name = "MyAvatar"; // There is only one client which has the authority
             m_avatar = newPlayer;
+            m_myAvatar = player;
         }
 
-        Debug.Log($"---+++ Registering new player @ {Time.fixedTime}s, {newPlayer}");
+        Debug.Log($"---+++ Registering new player @ {Time.fixedTime}s, {newPlayer}, netId {player.netId}");
+    }
+
+
+    public void RegisterNewTool2(Tools2Mirror tool, bool hasAuthority)
+    {
+        if (hasAuthority)
+        {
+            m_myAvatar.m_tool = tool;
+        }
+
+        //Debug.Log($"+++ Registering new tool2 @ {Time.fixedTime}s, {tool}, netId {tool.netId}, authority= {hasAuthority}, isLocalPlayer {player.isLocalPlayer}");
+
+        Debug.Log($"+++ Registering new tool2 @ {Time.fixedTime}s, {tool}, netId {tool.netId}, authority= {hasAuthority}");
     }
 
 
@@ -116,6 +135,11 @@ public class GameMan : MonoBehaviour
     void Update()
     {
         m_logTitle.text = $"{Time.fixedTime}s\n{m_netMan.networkAddress}\n{m_lastConnected}s";
+
+        if (m_avatar)
+        {
+            m_logTitle.text = $"{m_avatar.transform.position}";
+        }
 
         if (!m_netMan.isNetworkActive)
         {
@@ -179,9 +203,13 @@ public class GameMan : MonoBehaviour
                 //player.PositionPlayer(new Vector3(0.1f, 1.0f, 1.8f));
                 player.transform.SetPositionAndRotation(new Vector3(0.1f, 1.0f, 1.8f), Quaternion.identity);
             }
+            else
+            {
+                Application.Quit();
+            }
         }
 
-        // Spawn entity
+        // Spawn unsync entity
         if (Input.GetKeyUp(KeyCode.R))
         {
             //*
@@ -191,6 +219,132 @@ public class GameMan : MonoBehaviour
                 player.SpawnMyTool();
             }
             //*/
+        }
+
+        // Spawn sync entity
+        if (Input.GetKeyUp(KeyCode.T))
+        {
+            //*
+            if (m_avatar != null)
+            {
+                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+
+                // Check if already there
+                if (player.m_tool == null)
+                {
+                    GameObject go = GameObject.Find("AvatarTool2");
+                    Tools2Mirror tool = null;
+                    if (go != null)
+                    {
+                        tool = go.GetComponent<Tools2Mirror>();
+                    }
+                    if (tool != null)
+                    {
+                        player.m_tool = tool;
+                    }
+                    else
+                    {
+                        player.SpawnMyTool2();
+
+                        // Assign player tool2 by name
+                        /*
+                        if (player.m_tool == null)
+                        {
+                            player.m_tool = GameObject.Find("AvatarTool2").GetComponent<Tools2Mirror>();
+                        }
+                        */
+                    }
+                }
+            }
+            //*/
+        }
+
+        if (Input.GetKey(KeyCode.Keypad6))
+        {
+            if (m_avatar != null)
+            {
+                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+                player.m_tool.transform.RotateAround(player.m_tool.transform.position, Vector3.up, 100.0f * Time.deltaTime);
+            }
+        }
+        if (Input.GetKey(KeyCode.Keypad4))
+        {
+            if (m_avatar != null)
+            {
+                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+                player.m_tool.transform.RotateAround(player.m_tool.transform.position, Vector3.up, -100.0f * Time.deltaTime);
+            }
+        }
+        if (Input.GetKey(KeyCode.Keypad9))
+        {
+            if (m_avatar != null)
+            {
+                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+                Vector3 pos = player.m_tool.transform.position;
+                pos += Vector3.up * 1.0f * Time.deltaTime;
+                Quaternion q = player.m_tool.transform.rotation;
+                player.m_tool.transform.SetPositionAndRotation(pos, q);
+            }
+        }
+        if (Input.GetKey(KeyCode.Keypad7))
+        {
+            if (m_avatar != null)
+            {
+                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+                Vector3 pos = player.m_tool.transform.position;
+                pos -= Vector3.up * 1.0f * Time.deltaTime;
+                Quaternion q = player.m_tool.transform.rotation;
+                player.m_tool.transform.SetPositionAndRotation(pos, q);
+            }
+        }
+        if (Input.GetKey(KeyCode.Keypad8))
+        {
+            if (m_myAvatar != null)
+            { 
+                if (m_myAvatar.m_tool != null)
+                {
+                    Transform t = m_myAvatar.m_tool.transform;
+                    Vector3 pos = t.position;
+                    pos += t.up * 1.0f * Time.deltaTime;
+                    Quaternion q = t.rotation;
+                    t.SetPositionAndRotation(pos, q);
+                }
+            }
+        }
+        if (Input.GetKey(KeyCode.Keypad5))
+        {
+            if (m_avatar != null)
+            {
+                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+                Vector3 pos = player.m_tool.transform.position;
+                pos += player.m_tool.transform.up * -0.8f * Time.deltaTime;
+                Quaternion q = player.m_tool.transform.rotation;
+                player.m_tool.transform.SetPositionAndRotation(pos, q);
+            }
+        }
+        if (Input.GetKeyUp(KeyCode.Keypad3))
+        {
+            if (m_myAvatar != null)
+            {
+                if (m_myAvatar.m_tool != null)
+                {
+                    // Set right spinning mode
+                    m_myAvatar.m_tool.m_rightSpinning = !m_myAvatar.m_tool.m_rightSpinning;
+                    m_myAvatar.m_tool.m_leftSpinning = false;
+                }
+            }
+        }
+        if (Input.GetKeyUp(KeyCode.Keypad1))
+        {
+            if (m_myAvatar != null)
+            {
+                if (m_myAvatar.m_tool != null)
+                {
+                    // Set right spinning mode
+                    m_myAvatar.m_tool.m_leftSpinning = !m_myAvatar.m_tool.m_leftSpinning;
+                    m_myAvatar.m_tool.m_rightSpinning = false;
+                }
+            }
         }
 
         m_curRotForce = 0.0f;
@@ -237,7 +391,8 @@ public class GameMan : MonoBehaviour
         // Update head
 #if UNITY_EDITOR
 #else
-        //*
+        //---
+        /*
         if (NetworkManager.singleton.mode == NetworkManagerMode.Host)
         {
             if (m_avatar != null)
