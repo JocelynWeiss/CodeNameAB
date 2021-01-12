@@ -22,6 +22,8 @@ namespace OculusSampleFramework
         private Color m_color = Color.black;
         private MeshRenderer[] m_meshRenderers = null;
         private bool m_highlight;
+
+        public float m_lastGrabbed = 0.0f;
         
         public bool Highlight
         {
@@ -33,12 +35,11 @@ namespace OculusSampleFramework
             }
         }
 
-        protected void UpdateColor()
+        public void UpdateColor()
         {
             if (isGrabbed) SetColor(COLOR_GRAB);
             else if (Highlight) SetColor(COLOR_HIGHLIGHT);
             else SetColor(m_color);
-
         }
 
         override public void GrabBegin(OVRGrabber hand, Collider grabPoint)
@@ -51,6 +52,7 @@ namespace OculusSampleFramework
         {
             base.GrabEnd(linearVelocity, angularVelocity);
             UpdateColor();
+            m_lastGrabbed = Time.time;
         }
 
         void Awake()
@@ -76,12 +78,14 @@ namespace OculusSampleFramework
             {
                 m_meshRenderers = this.GetComponentsInChildren<MeshRenderer>();
             }
+            /*
             m_color = new Color(
                 Random.Range(0.1f, 0.95f),
                 Random.Range(0.1f, 0.95f),
                 Random.Range(0.1f, 0.95f),
-                1.0f
-            );
+                1.0f);
+            */
+            //m_color = Color.green;
             SetColor(m_color);
         }
 
@@ -93,9 +97,20 @@ namespace OculusSampleFramework
                 for (int j = 0; j < meshRenderer.materials.Length; ++j)
                 {
                     Material meshMaterial = meshRenderer.materials[j];
-                    meshMaterial.color = color;
+                    //meshMaterial.color = color; // //Jow: Does nothing...
+                    //meshMaterial.SetColor("_BaseColor", color);
+                    meshMaterial.SetColor("_EmissionColor", color);
                 }
             }
+
+            /*
+            Renderer rd = GetComponentInParent<Renderer>();
+            if (rd)
+            {
+                //rd.material.SetColor("_BaseColor", Color.yellow);
+                //rd.material.SetColor("_BaseColor", Color.green);
+            }
+            */
         }
     }
 }

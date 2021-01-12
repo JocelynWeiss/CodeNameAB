@@ -46,9 +46,11 @@ public class PlayerControlMirror : NetworkBehaviour
         int n = NetworkManager.singleton.numPlayers;
         //transform.SetPositionAndRotation(new Vector3(0.0f + n, 2.0f, 1.0f), Quaternion.identity);
         uint netid = GetComponent<NetworkIdentity>().netId;
-        transform.SetPositionAndRotation(new Vector3(0.0f + netid, 2.0f, 1.0f), Quaternion.identity);
+        //transform.SetPositionAndRotation(new Vector3(0.0f + n, 2.0f, 1.0f), Quaternion.identity);
+        transform.SetPositionAndRotation(new Vector3(1.0f + GameMan.s_instance.m_playerNb, 2.0f, 1.0f), Quaternion.identity);
 
         Debug.Log($"Creating client {n} --->netId {netid}: {this} OnStartClient @ {Time.fixedTime}s hasAuthority {hasAuthority}");
+        Debug.Log($"{transform.position}");
         /*
         if (hasAuthority)
         {
@@ -164,19 +166,25 @@ public class PlayerControlMirror : NetworkBehaviour
 
 
     // Spawn an object which is then client controled (by physics)
-    public void SpawnMyTool()
+    public void SpawnMyTool(Vector3 pos, Quaternion rot)
     {
-        CmdSpawnTool(m_syncColor);
+        CmdSpawnTool(m_syncColor, pos, rot);
+        AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[0], pos);
     }
 
 
-    [Command] void CmdSpawnTool(Color myCol)
+    [Command] void CmdSpawnTool(Color myCol, Vector3 pos, Quaternion rot)
     {
         GameObject toolPrefab = NetworkManager.singleton.spawnPrefabs[0];
         if (toolPrefab)
         {
+            /*
             GameObject tool = Instantiate(toolPrefab, transform.position, transform.rotation);
             tool.transform.position = transform.position + new Vector3(0.0f, -0.2f, 0.0f);
+            */
+            GameObject tool = Instantiate(toolPrefab, pos, rot);
+            //tool.transform.position = trs.position + new Vector3(0.0f, -0.2f, 0.0f);
+            tool.transform.position = pos + new Vector3(0.0f, 0.0f, 0.0f);
             ToolsMirror compTool = tool.GetComponent<ToolsMirror>();
             compTool.m_Owner = this.gameObject;
             compTool.SetToolColour(myCol); // Set it before the spawn so as a sync var it's properly set

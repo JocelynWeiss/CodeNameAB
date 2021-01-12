@@ -4,7 +4,7 @@ using UnityEngine;
 using Mirror;
 
 
-public enum MobsType { MobA, MobB}
+public enum MobsType { MobA, MobB, MobC}
 
 
 public class Mobs : NetworkBehaviour
@@ -13,9 +13,12 @@ public class Mobs : NetworkBehaviour
     public string m_name;
     [SyncVar] public float m_life;
     [SyncVar] public float m_armor;
+    public float m_speedFactor = 0.5f;
+    [ViewOnly] public float m_curSpeedFactor = 0.0f; // computed from m_speedFactor
     public List<MobPart> m_parts = new List<MobPart>();
 
 
+    
     public override void OnStartServer()
     {
         // Fill a list of mob parts that define this mob
@@ -24,11 +27,17 @@ public class Mobs : NetworkBehaviour
             case MobsType.MobA:
                 m_name = "MobA";
                 // Most simple mob with only one life part
+                //m_speedFactor = 0.15f;
                 break;
             case MobsType.MobB:
                 m_name = "MobB";
-                m_life = 100.0f;
-                m_armor = 20.0f;
+                //m_life = 100.0f;
+                //m_armor = 20.0f;
+                //m_speedFactor = 0.1f;
+                break;
+            case MobsType.MobC:
+                m_name = "MobC";
+                //m_speedFactor = 0.25f;
                 break;
             default:
                 m_name = "WrongMob";
@@ -61,14 +70,17 @@ public class Mobs : NetworkBehaviour
     {
         float life = 0.0f;
         float armor = 0.0f;
+        float speed = 0.0f;
         foreach (MobPart part in m_parts)
         {
             life += part.m_curLifeP * part.m_lifeAddon;
             armor += part.m_curArmorP * part.m_armorAddon;
+            speed += part.m_curLifeP * part.m_speedAddon;
         }
 
         m_life = life;
         m_armor = armor;
+        m_curSpeedFactor = m_speedFactor + speed;
 
         Debug.Log($"{Time.fixedTime}s {m_life}pv");
 
@@ -76,6 +88,7 @@ public class Mobs : NetworkBehaviour
         {
             Debug.Log($"{Time.fixedTime}s Mob is DEAD !");
             gameObject.SetActive(false);
+            GameMan.s_instance.MobIsDead(this);
         }
     }
 

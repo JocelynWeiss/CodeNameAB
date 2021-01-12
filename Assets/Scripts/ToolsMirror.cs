@@ -13,6 +13,10 @@ public class ToolsMirror : NetworkBehaviour
     public GameObject m_Owner;
     public float m_lifeTime = 5.0f; // life time in seconds
 
+    public float m_damageLife = 5.0f; // Damage against life
+    public float m_damageArmour = 5.0f; // Damage against Armour
+    public float m_pushbackForce = 0.01f;
+
     [SyncVar]
     public Color m_syncColor = Color.grey;
 
@@ -37,7 +41,8 @@ public class ToolsMirror : NetworkBehaviour
 
         // This object transform isn't synchronized, add force client side
         Rigidbody rb = GetComponent<Rigidbody>();
-        Vector3 force = transform.forward * 100.0f;
+        //Vector3 force = transform.forward * 100.0f;
+        Vector3 force = transform.forward * 1000.0f;
         rb.AddForce(force);
     }
 

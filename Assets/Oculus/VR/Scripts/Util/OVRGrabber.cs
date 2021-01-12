@@ -77,6 +77,8 @@ public class OVRGrabber : MonoBehaviour
 	protected Dictionary<OVRGrabbable, int> m_grabCandidates = new Dictionary<OVRGrabbable, int>();
 	protected bool m_operatingWithoutOVRCameraRig = true;
 
+    protected OVRHand m_hand = null;
+
     /// <summary>
     /// The currently grabbed object.
     /// </summary>
@@ -112,6 +114,8 @@ public class OVRGrabber : MonoBehaviour
 			    m_operatingWithoutOVRCameraRig = false;
 		    }
         }
+
+        m_hand = transform.GetComponentInChildren<OVRHand>();
     }
 
     protected virtual void Start()
@@ -166,10 +170,21 @@ public class OVRGrabber : MonoBehaviour
         m_lastRot = transform.rotation;
 
 		float prevFlex = m_prevFlex;
-		// Update values from inputs
-		m_prevFlex = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, m_controller);
+        // Update values from inputs
+        // JowModif: if a hand is present take finger pinching force
+        if (m_hand != null)
+        {
+            //m_prevFlex = m_hand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
+            float middle = m_hand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
+            float index = m_hand.GetFingerPinchStrength(OVRHand.HandFinger.Index);
+            m_prevFlex = (middle + index) * 0.5f;
+        }
+        else
+        {
+            m_prevFlex = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, m_controller);
+        }
 
-		CheckForGrabOrRelease(prevFlex);
+        CheckForGrabOrRelease(prevFlex);
     }
 
     void OnDestroy()
