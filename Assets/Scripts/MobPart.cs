@@ -67,18 +67,8 @@ public class MobPart : MonoBehaviour
             m_lastHit = Time.fixedTime;
 
             // Set damages
-            /*
-            float life = m_lifeAddon * m_curLifeP;
-            life -= bullet.m_damageLife;
-            if (life < 0.0f)
-            {
-                life = 0.0f;
-            }
-            float p = life / m_lifeAddon;
-            m_curLifeP = p;
-            */
-
             // New calc with armour
+            /*
             float life = m_lifeAddon * m_curLifeP;
             float armour = m_armorAddon * m_curArmorP;
             if (m_armorAddon > 0.0f)
@@ -102,6 +92,8 @@ public class MobPart : MonoBehaviour
                 float p = life / m_lifeAddon;
                 m_curLifeP = p;
             }
+            */
+            TakeDamage(bullet.m_damageLife, bullet.m_damageArmour);
 
             // If no armour and no life, the part is destroyed
             if ((m_curArmorP == 0.0f) && (m_curLifeP == 0.0f))
@@ -118,6 +110,41 @@ public class MobPart : MonoBehaviour
 
                 mob.CalcLifeAndArmor();
             }
+        }
+    }
+
+
+    // Inflict damage to this part
+    public void TakeDamage(float dmgLife, float dmgArmour)
+    {
+        float life = m_lifeAddon * m_curLifeP;
+
+        if (life < 0.0f)
+        {
+            Debug.LogWarning($"{Time.fixedTime}s TakeDamage life = {life} lifeAddon {m_lifeAddon} curLifeP {m_curLifeP}");
+        }
+
+        float armour = m_armorAddon * m_curArmorP;
+        if (m_armorAddon > 0.0f)
+        {
+            armour -= dmgArmour;
+            if (armour < 0.0f)
+            {
+                armour = 0.0f;
+            }
+            float p = armour / m_armorAddon;
+            m_curArmorP = p;
+        }
+
+        if (m_lifeAddon > 0.0f)
+        {
+            life -= dmgLife * (1.0f - m_curArmorP);
+            if (life < 0.0f)
+            {
+                life = 0.0f;
+            }
+            float p = life / m_lifeAddon;
+            m_curLifeP = p;
         }
     }
 

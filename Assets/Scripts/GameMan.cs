@@ -42,6 +42,7 @@ public class GameMan : MonoBehaviour
     public int m_waveNb = 0;
     public float m_nextWaveTime = 0.0f;
     public WaveClass m_wave; // The current mobs wave
+    public JowProgressBar m_playerLifeBar;
 
     GameObject m_MobA;
 
@@ -217,6 +218,9 @@ public class GameMan : MonoBehaviour
         m_waveNb++;
         m_nextWaveTime = 0.0f;
         m_wave.InitWave(m_waveNb);
+
+        m_playerLifeBar.m_maximum = 1000;
+        m_playerLifeBar.m_cur = 1000.0f;
     }
 
 
@@ -319,6 +323,7 @@ public class GameMan : MonoBehaviour
             }
         }
 
+        float hitAmount = 0.0f;
         // Handle mobs mouvements
         if (m_wave.m_mobs.Count > 0)
         {
@@ -332,7 +337,16 @@ public class GameMan : MonoBehaviour
                 {
                     mob.transform.position += forward * mob.m_curSpeedFactor;
                 }
+
+                float t = 1.0f - Mathf.InverseLerp(0.0f, 5.0f, mob.transform.position.z);
+                hitAmount += t * 100.0f;
             }
+        }
+
+        if (hitAmount > 0.0f)
+        {
+            float life = m_playerLifeBar.m_cur - hitAmount * Time.fixedDeltaTime;
+            m_playerLifeBar.m_cur = life;
         }
     }
 

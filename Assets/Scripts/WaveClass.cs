@@ -82,7 +82,7 @@ public class WaveClass
             }
         }
 
-        if (hint == 1)
+        if (hint == 4)
         {
             GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[4];
             if (mobBPrefab)

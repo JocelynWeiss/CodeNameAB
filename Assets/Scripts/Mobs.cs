@@ -82,7 +82,7 @@ public class Mobs : NetworkBehaviour
         m_armor = armor;
         m_curSpeedFactor = m_speedFactor + speed;
 
-        Debug.Log($"{Time.fixedTime}s {m_life}pv");
+        Debug.Log($"{Time.fixedTime}s {name} {m_life}pv");
 
         if (life <= 0.0f)
         {
