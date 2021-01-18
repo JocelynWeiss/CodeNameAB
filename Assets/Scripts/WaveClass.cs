@@ -25,14 +25,21 @@ public class WaveClass
     }
 
 
+    // Start a new wave of mobs
     public void InitWave(int hint)
     {
         Debug.Log($"{Time.fixedTime}s InitWave with hint {hint}...");
         m_mobs.Clear();
         m_deathNb = 0;
 
+        if (NetworkManager.singleton.spawnPrefabs.Count < 3)
+        {
+            Debug.LogWarning($"No prefab for mobs, did you drag&drop them in the inspector?");
+            return;
+        }
+
         GameObject mobAPrefab = NetworkManager.singleton.spawnPrefabs[2];
-        if (mobAPrefab)
+        if ((hint == 1) || (hint > 4))
         {
             float y = 0.75f + hint * 0.8f;
             //Vector3 spawnPoint = new Vector3(1.0f, y, 1.7f);
@@ -62,7 +69,7 @@ public class WaveClass
             NetworkServer.Spawn(mobGo);
         }
 
-        if (hint == 3)
+        if (hint == 1)
         {
             GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[3];
             if (mobBPrefab)
@@ -102,6 +109,7 @@ public class WaveClass
     }
 
 
+    // 
     public void MobIsDead(Mobs deadMob)
     {
         foreach (Mobs mob in m_mobs)

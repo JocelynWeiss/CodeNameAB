@@ -237,6 +237,7 @@ GameObject:
   - component: {fileID: 4318143782361655773}
   - component: {fileID: 4318143782361655589}
   - component: {fileID: 4318143782361655591}
+  - component: {fileID: 6774354889813688382}
   m_Layer: 8
   m_Name: MobC
   m_TagString: Untagged
@@ -295,11 +296,30 @@ MonoBehaviour:
   m_name: 
   m_life: 0
   m_armor: 0
-  m_speedFactor: 0.15
+  m_speedFactor: 0.02
+  m_curSpeedFactor: 0
   m_parts:
   - {fileID: 4318143782361655595}
   - {fileID: 4318143781954025881}
   - {fileID: 4318143783020395205}
+--- !u!114 &6774354889813688382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4318143782361655766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f74aedd71d9a4f55b3ce499326d45fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  clientAuthority: 0
+  localPositionSensitivity: 0.01
+  localRotationSensitivity: 0.01
+  localScaleSensitivity: 0.01
 --- !u!1 &4318143783020395204
 GameObject:
   m_ObjectHideFlags: 0

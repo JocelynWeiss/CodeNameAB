@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
 public class MobPart : MonoBehaviour
 {
@@ -60,39 +61,14 @@ public class MobPart : MonoBehaviour
         if (bullet == null)
             return;
 
-        //m_renderer = GetComponent<Renderer>();
         if (m_renderer)
         {
             m_renderer.material.color = Color.red;
             m_lastHit = Time.fixedTime;
+        }
 
-            // Set damages
-            // New calc with armour
-            /*
-            float life = m_lifeAddon * m_curLifeP;
-            float armour = m_armorAddon * m_curArmorP;
-            if (m_armorAddon > 0.0f)
-            {
-                armour -= bullet.m_damageArmour;
-                if (armour < 0.0f)
-                {
-                    armour = 0.0f;
-                }
-                float p = armour / m_armorAddon;
-                m_curArmorP = p;
-            }
-
-            if (m_lifeAddon > 0.0f)
-            {
-                life -= bullet.m_damageLife * (1.0f - m_curArmorP);
-                if (life < 0.0f)
-                {
-                    life = 0.0f;
-                }
-                float p = life / m_lifeAddon;
-                m_curLifeP = p;
-            }
-            */
+        if (NetworkManager.singleton.mode == NetworkManagerMode.Host)
+        {
             TakeDamage(bullet.m_damageLife, bullet.m_damageArmour);
 
             // If no armour and no life, the part is destroyed

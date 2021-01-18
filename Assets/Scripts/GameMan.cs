@@ -282,6 +282,14 @@ public class GameMan : MonoBehaviour
             player.transform.SetPositionAndRotation(pos, player.transform.rotation);
         }
 
+        //---
+        /*
+        if (m_myAvatar != null)
+        {
+            Debug.DrawRay(m_myAvatar.transform.position, m_myAvatar.transform.forward, Color.red);
+        }
+        */
+
         // Early out if no network
         if (!m_netMan.isNetworkActive)
             return;
@@ -454,11 +462,10 @@ public class GameMan : MonoBehaviour
             if (m_avatar != null)
             {
                 PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-                //player.SpawnMyTool(player.transform);
-
-                //player.SpawnMyTool(m_rightHand.transform.position, m_rightHand.PointerPose.rotation);
-                Quaternion q = Quaternion.LookRotation(player.transform.forward);
-                player.SpawnMyTool(player.transform.position, q);
+                //Quaternion q = Quaternion.LookRotation(player.transform.forward);
+                Quaternion q = player.transform.rotation;
+                Vector3 p = player.transform.position + player.transform.forward * 0.2f; // Spawn in front to avoid collisions
+                player.SpawnMyTool(p, q);
 
                 //AudioSource.PlayClipAtPoint(m_audioSounds[0], m_cameraRig.trackingSpace.position);
             }

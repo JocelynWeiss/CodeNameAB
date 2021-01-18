@@ -61,13 +61,16 @@ public class Mobs : NetworkBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Log($"{Time.fixedTime}s Start---");
+        Debug.Log($"{Time.fixedTime}s Start--- {name}");
     }
 
 
     // Compute current life and armor based on addons
     public void CalcLifeAndArmor()
     {
+        if (NetworkManager.singleton.mode != NetworkManagerMode.Host)
+            return;
+
         float life = 0.0f;
         float armor = 0.0f;
         float speed = 0.0f;
@@ -84,11 +87,26 @@ public class Mobs : NetworkBehaviour
 
         Debug.Log($"{Time.fixedTime}s {name} {m_life}pv");
 
-        if (life <= 0.0f)
+        if (gameObject.activeSelf == true)
         {
-            Debug.Log($"{Time.fixedTime}s Mob is DEAD !");
-            gameObject.SetActive(false);
-            GameMan.s_instance.MobIsDead(this);
+            if (life < 1.0f) // A mob need at least 1pv
+            {
+                Debug.Log($"{Time.fixedTime}s Mob is DEAD !");
+                gameObject.SetActive(false);
+                GameMan.s_instance.MobIsDead(this);
+            }
+        }
+
+        // A mob with its first (main) part at 0 life needs to be destroyed
+        if (gameObject.activeSelf == true)
+        {
+            float mainLife = m_parts[0].m_curLifeP;
+            if (mainLife <= 0.0f)
+            {
+                Debug.Log($"{Time.fixedTime}s Mob is DEAD ! main part destroyed");
+                gameObject.SetActive(false);
+                GameMan.s_instance.MobIsDead(this);
+            }
         }
     }
 
