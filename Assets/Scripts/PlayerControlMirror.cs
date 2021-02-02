@@ -47,7 +47,8 @@ public class PlayerControlMirror : NetworkBehaviour
         //transform.SetPositionAndRotation(new Vector3(0.0f + n, 2.0f, 1.0f), Quaternion.identity);
         uint netid = GetComponent<NetworkIdentity>().netId;
         //transform.SetPositionAndRotation(new Vector3(0.0f + n, 2.0f, 1.0f), Quaternion.identity);
-        transform.SetPositionAndRotation(new Vector3(1.0f + GameMan.s_instance.m_playerNb, 2.0f, 1.0f), Quaternion.identity);
+        Quaternion q = Quaternion.identity;
+        transform.SetPositionAndRotation(new Vector3(1.0f + GameMan.s_instance.m_playerNb, 2.0f, 1.0f), q);
 
         Debug.Log($"Creating client {n} --->netId {netid}: {this} OnStartClient @ {Time.fixedTime}s hasAuthority {hasAuthority}");
         Debug.Log($"{transform.position}");
@@ -81,7 +82,7 @@ public class PlayerControlMirror : NetworkBehaviour
         }
         else
         {
-            Debug.Log($"+++ {this} NetId= {netId} Start @ {Time.fixedTime}s");
+            Debug.Log($"+++ {this} NetId= {netId} Start @ {Time.fixedTime}s numPlayers {NetworkManager.singleton.numPlayers} over gameMan playerNb {GameMan.s_instance.m_playerNb}");
         }
 
         //transform.SetPositionAndRotation(new Vector3(1.0f, 1.0f, 1.0f), Quaternion.identity);

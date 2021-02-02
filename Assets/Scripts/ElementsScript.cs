@@ -80,6 +80,13 @@ public class ElementsScript : MonoBehaviour
     }
 
 
+    // Remove this object from the scene
+    private void OnDestroy()
+    {
+        Destroy(gameObject);
+    }
+
+
     // Make it fall after waitSec
     public IEnumerator DelayedFall(float waitSec)
     {

@@ -38,10 +38,13 @@ public class WaveClass
             return;
         }
 
+        Vector3 pillarPos = GameMan.s_instance.GetPillar().transform.position;
+
         GameObject mobAPrefab = NetworkManager.singleton.spawnPrefabs[2];
-        if ((hint == 1) || (hint > 4))
+        if ((hint == 1) || (hint > 6))
         {
             float y = 0.75f + hint * 0.8f;
+            y = pillarPos.y + 3.0f;
             //Vector3 spawnPoint = new Vector3(1.0f, y, 1.7f);
             Vector3 spawnPoint = new Vector3(1.0f, y, 5.0f);
             GameObject mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, Quaternion.identity);
@@ -53,7 +56,7 @@ public class WaveClass
 
         if (hint == 2)
         {
-            float y = 0.75f + hint * 0.8f;
+            float y = pillarPos.y + 3.0f;
             //Vector3 spawnPoint = new Vector3(2.2f, y, 1.7f);
             Vector3 spawnPoint = new Vector3(2.2f, y, 5.0f);
             GameObject mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, Quaternion.identity);
@@ -61,7 +64,7 @@ public class WaveClass
             Mobs mob = mobGo.GetComponent<Mobs>();
             m_mobs.Add(mob);
 
-            // Give hime some extra armour
+            // Give hime some extra armour in code
             mob.m_parts[0].m_armorAddon = 20.0f;
             mob.m_parts[0].m_curArmorP = 1.0f;
             mob.CalcLifeAndArmor();
@@ -69,17 +72,16 @@ public class WaveClass
             NetworkServer.Spawn(mobGo);
         }
 
-        if (hint == 1)
+        if (hint == 3)
         {
             GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[3];
             if (mobBPrefab)
             {
-                float y = 0.75f + hint * 0.8f;
+                float y = pillarPos.y + 3.0f;
                 //Vector3 spawnPoint = new Vector3(2.2f, y, 1.7f);
                 Vector3 spawnPoint = new Vector3(2.2f, y, 5.0f);
                 GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, Quaternion.identity);
                 mobGo.name = "NewMobB";
-                //mobGo.SetActive(true);
                 Mobs mob = mobGo.GetComponent<Mobs>();
                 m_mobs.Add(mob);
 
@@ -94,7 +96,7 @@ public class WaveClass
             GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[4];
             if (mobBPrefab)
             {
-                float y = 0.75f + hint * 0.8f;
+                float y = pillarPos.y + 3.0f;
                 Vector3 spawnPoint = new Vector3(2.2f, y, 5.0f);
                 GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, Quaternion.identity);
                 mobGo.name = "NewMobC";
@@ -103,6 +105,46 @@ public class WaveClass
 
                 mob.CalcLifeAndArmor();
 
+                NetworkServer.Spawn(mobGo);
+            }
+        }
+
+        if (hint == 5)
+        {
+            float y = pillarPos.y + 3.0f;
+            Vector3 spawnPoint = new Vector3(3.0f, y + 1.0f, 5.0f);
+            GameObject mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, Quaternion.identity);
+            Mobs mob = mobGo.GetComponent<Mobs>();
+            m_mobs.Add(mob);
+            mob.CalcLifeAndArmor();
+            NetworkServer.Spawn(mobGo);
+
+            spawnPoint = new Vector3(0.0f, y, 5.0f);
+            mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, Quaternion.identity);
+            mob = mobGo.GetComponent<Mobs>();
+            m_mobs.Add(mob);
+            mob.CalcLifeAndArmor();
+            NetworkServer.Spawn(mobGo);
+        }
+
+        if (hint == 6)
+        {
+            GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[3];
+            if (mobBPrefab)
+            {
+                float y = pillarPos.y + 3.0f;
+                Vector3 spawnPoint = new Vector3(0.0f, y, 5.0f);
+                GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, Quaternion.identity);
+                Mobs mob = mobGo.GetComponent<Mobs>();
+                m_mobs.Add(mob);
+                mob.CalcLifeAndArmor();
+                NetworkServer.Spawn(mobGo);
+
+                spawnPoint = new Vector3(3.0f, y + 1.0f, 5.0f);
+                mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, Quaternion.identity);
+                mob = mobGo.GetComponent<Mobs>();
+                m_mobs.Add(mob);
+                mob.CalcLifeAndArmor();
                 NetworkServer.Spawn(mobGo);
             }
         }

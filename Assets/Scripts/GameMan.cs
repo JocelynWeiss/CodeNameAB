@@ -7,7 +7,8 @@ using OculusSampleFramework;
 
 
 // A game manager dedicated to test mirror networking services...
-//JowNext: recentrer le cylindre, tester le grab des éléments, tirer de la main
+//JowNext: Add a game over if no more life
+
 
 
 // Our 4 Elements in the game
@@ -32,6 +33,7 @@ public class GameMan : MonoBehaviour
     private float m_lastConnected = 0.0f;
     private GameObject m_avatar; // Deprecated, Todo: remove me
     private PlayerControlMirror m_myAvatar;
+    List<GameObject> m_pillarsPool = new List<GameObject>();
     private GameObject m_myPillar; // The pillar where this avatar is sitting on
     public float m_upForce = 300.0f;
     public float m_rotForce = 10.0f;
@@ -43,6 +45,7 @@ public class GameMan : MonoBehaviour
     public float m_nextWaveTime = 0.0f;
     public WaveClass m_wave; // The current mobs wave
     public JowProgressBar m_playerLifeBar;
+    public TextMeshProUGUI m_playerInfoText;
 
     GameObject m_MobA;
 
@@ -50,12 +53,11 @@ public class GameMan : MonoBehaviour
     private GameObject m_localPlayerHead;
     OVRHand m_leftHand;
     OVRHand m_rightHand;
-    //GameObject m_leftAnchor;
-    //GameObject m_rightAnchor;
     private float m_rightLastBulletTime = 0.0f;
     private float m_leftLastBulletTime = 0.0f;
     private float m_rightRPS = 1.0f; // Round per seconds (seconds between 2 shots)
     private float m_leftRPS = 1.0f; // Round per seconds (seconds between 2 shots)
+    int m_ammoCount = 100;
     public OVRCameraRig m_cameraRig;
 
     Material[] m_CubesElemMats = new Material[4];
@@ -114,7 +116,11 @@ public class GameMan : MonoBehaviour
         m_wave = new WaveClass();
         m_playerNb = 0;
 
-        m_myPillar = GameObject.Find("PillarA");
+        // Add few pillars for players seats
+        GameObject pillarGo = GameObject.Find("PillarA");
+        m_pillarsPool.Add(pillarGo);
+        pillarGo = GameObject.Find("PillarB");
+        m_pillarsPool.Add(pillarGo);
     }
 
 
@@ -178,37 +184,41 @@ public class GameMan : MonoBehaviour
     }
 
 
+    // Instantiate a new element
+    void AddNewElement()
+    {
+        int count = m_elemCubes.Count;
+        GameObject obj = GameObject.Instantiate(m_elementCubePrefab);
+        obj.name = $"Elem_{count}";
+        Vector3 eyePos = m_cameraRig.transform.position;
+        Vector3 pos = eyePos + new Vector3(-0.5f, 1.0f + ((float)count * 0.2f), 0.2f);
+        obj.transform.SetPositionAndRotation(pos, Quaternion.identity);
+
+        ElementsScript elem = obj.GetComponent<ElementsScript>();
+        if (elem)
+        {
+            int matId = count % 4;
+            elem.ChangeType((Elements)matId, m_CubesElemMats[matId]);
+        }
+
+        m_elemCubes.Add(elem);
+
+        /*
+        ColorGrabbable cg = obj.GetComponent<ColorGrabbable>();
+        if (cg)
+        {
+            //cg.Highlight = true;
+            cg.UpdateColor();
+        }
+        //*/
+    }
+
+
     void LoadElementsCubes()
     {
         for (int i = 0; i < m_startElementCount; ++i)
         {
-            GameObject obj = GameObject.Instantiate(m_elementCubePrefab);
-            obj.name = $"Elem_{i}";
-            //Vector3 pos = new Vector3(1.5f, 1.0f + ((float)i * 0.2f), 1.0f);
-            Vector3 eyePos = m_cameraRig.transform.position;
-            //Vector3 eyePos = m_cameraRig.centerEyeAnchor.position;//null
-            //Vector3 eyePos = m_cameraRig.trackerAnchor.position;//null
-            //Vector3 pos = eyePos + new Vector3(-0.5f, -0.1f + ((float)i * 0.2f), 0.5f);
-            Vector3 pos = eyePos + new Vector3(-0.5f, 1.0f + ((float)i * 0.2f), 0.2f);
-            obj.transform.SetPositionAndRotation(pos, Quaternion.identity);
-
-            ElementsScript elem = obj.GetComponent<ElementsScript>();
-            if (elem)
-            {
-                int matId = i % 4;
-                elem.ChangeType((Elements)matId, m_CubesElemMats[matId]);
-            }
-
-            m_elemCubes.Add(elem);
-
-            /*
-            ColorGrabbable cg = obj.GetComponent<ColorGrabbable>();
-            if (cg)
-            {
-                //cg.Highlight = true;
-                cg.UpdateColor();
-            }
-            //*/
+            AddNewElement();
         }
     }
 
@@ -221,9 +231,38 @@ public class GameMan : MonoBehaviour
 
         m_playerLifeBar.m_maximum = 1000;
         m_playerLifeBar.m_cur = 1000.0f;
+        m_ammoCount = 100;
+
+        Vector3 eyePos = m_cameraRig.transform.position;
+
+        // Show and reposition elements
+        int idx = 0;
+        foreach (ElementsScript elem in m_elemCubes)
+        {
+            Vector3 pos = eyePos + new Vector3(-0.5f, 1.0f + ((float)idx * 0.2f), 0.2f);
+            elem.transform.SetPositionAndRotation(pos, Quaternion.identity);
+
+            elem.gameObject.SetActive(true);
+            idx++;
+        }
+
+        // Add a new element for each wave
+        if (m_waveNb > 1)
+        {
+            AddNewElement();
+        }
+
+        SetPlayerInfoText();
     }
 
 
+    void SetPlayerInfoText()
+    {
+        m_playerInfoText.text = $"Wave {m_waveNb}\nAmmo {m_ammoCount}";
+    }
+
+
+    // Executed on any client even the host
     public void RegisterNewPlayer(GameObject newPlayer, bool hasAuthority)
     {
         PlayerControlMirror player = newPlayer.GetComponent<PlayerControlMirror>();
@@ -232,10 +271,19 @@ public class GameMan : MonoBehaviour
             newPlayer.name = "MyAvatar"; // There is only one client which has the authority
             m_avatar = newPlayer;
             m_myAvatar = player;
+
+            // Assign Pillars
+            m_myPillar = m_pillarsPool[m_playerNb];
+
+            // Set player pos and rot from pillars
+            Vector3 pos = m_myPillar.transform.position + new Vector3(0.0f, 1.8f, 0.0f);
+            Quaternion rot = m_myPillar.transform.rotation;
+            m_myAvatar.transform.SetPositionAndRotation(pos, rot);
+            m_cameraRig.transform.SetPositionAndRotation(pos, rot);
         }
 
         m_playerNb++;
-        Debug.Log($"---+++ Registering new player @ {Time.fixedTime}s, {newPlayer}, netId {player.netId}");
+        Debug.Log($"---+++ Registering new player @ {Time.fixedTime}s, {newPlayer}, netId {player.netId}, m_playerNb {m_playerNb}");
     }
 
 
@@ -252,6 +300,13 @@ public class GameMan : MonoBehaviour
     }
 
 
+    // Return this player pillar
+    public GameObject GetPillar()
+    {
+        return m_myPillar;
+    }
+
+
     public void MobIsDead(Mobs deadMob)
     {
         // A new mob is dead
@@ -259,9 +314,22 @@ public class GameMan : MonoBehaviour
 
         if (m_wave.m_deathNb == m_wave.m_mobs.Count)
         {
-            Debug.Log($"{Time.fixedTime}s, All mobs of the wave are dead. GG ! ({m_wave.m_deathNb})");
-            m_wave.FinishWave();
-            m_nextWaveTime = Time.fixedTime + 5.0f;
+            WaveEnded();
+        }
+    }
+
+
+    // End of a wave (no mobs left)
+    void WaveEnded()
+    {
+        Debug.Log($"{Time.fixedTime}s, All mobs of the wave {m_waveNb} are dead. GG ! ({m_wave.m_deathNb})");
+        m_wave.FinishWave();
+        m_nextWaveTime = Time.fixedTime + 5.0f;
+
+        // Hide remaining elements
+        foreach(ElementsScript elem in m_elemCubes)
+        {
+            elem.gameObject.SetActive(false);
         }
     }
 
@@ -304,6 +372,9 @@ public class GameMan : MonoBehaviour
         // Launch Phase 1
         if (m_nextWaveTime > 0.0f)
         {
+            string t = $"Next Wave in {(m_nextWaveTime - Time.fixedTime).ToString("f1")}s";
+            m_playerInfoText.text = t;
+
             if (Time.fixedTime > m_nextWaveTime)
             {
                 InitNewWave();
@@ -359,6 +430,19 @@ public class GameMan : MonoBehaviour
     }
 
 
+    // Check if we can fire
+    public bool CanFire()
+    {
+        if (m_waveNb == 0) // Cannot fire before 1st wave
+            return false;
+        if (m_nextWaveTime > 0.0f) // Cannot fire between waves
+            return false;
+        if (m_ammoCount <= 0)
+            return false;
+        return true;
+    }
+
+
     // Update is called once per frame
     void Update()
     {
@@ -366,7 +450,11 @@ public class GameMan : MonoBehaviour
 
         if (m_avatar)
         {
-            m_logTitle.text = $"{m_avatar.transform.position}";
+            string mobLife = "-";
+            if (m_wave.m_mobs.Count > 0)
+                mobLife = m_wave.m_mobs[0].m_life.ToString("f2");
+
+            m_logTitle.text = $"{m_avatar.transform.position}\n{mobLife}";
         }
 
         if (!m_netMan.isNetworkActive)
@@ -461,13 +549,22 @@ public class GameMan : MonoBehaviour
             //*
             if (m_avatar != null)
             {
-                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-                //Quaternion q = Quaternion.LookRotation(player.transform.forward);
-                Quaternion q = player.transform.rotation;
-                Vector3 p = player.transform.position + player.transform.forward * 0.2f; // Spawn in front to avoid collisions
-                player.SpawnMyTool(p, q);
+                if (CanFire() == true)
+                {
+                    if (Time.time > m_leftLastBulletTime + m_leftRPS)
+                    {
+                        m_leftLastBulletTime = Time.time;
+                        PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
+                        //Quaternion q = Quaternion.LookRotation(player.transform.forward);
+                        Quaternion q = player.transform.rotation;
+                        Vector3 p = player.transform.position + player.transform.forward * 0.2f; // Spawn in front to avoid collisions
+                        player.SpawnMyTool(p, q);
+                        m_ammoCount--;
+                        SetPlayerInfoText();
 
-                //AudioSource.PlayClipAtPoint(m_audioSounds[0], m_cameraRig.trackingSpace.position);
+                        //AudioSource.PlayClipAtPoint(m_audioSounds[0], m_cameraRig.trackingSpace.position);
+                    }
+                }
             }
             //*/
         }
@@ -478,7 +575,15 @@ public class GameMan : MonoBehaviour
             if (m_elemCubes.Count > 0)
             {
                 m_elemCubes[0].GetColorGrabbable().m_lastGrabbed = Time.time;
+                m_elemCubes[0].transform.position = m_cameraRig.transform.position + Vector3.up * 2.0f;
             }
+        }
+
+        // Inverse view for testing
+        if (Input.GetKeyUp(KeyCode.V))
+        {
+            Quaternion q = Quaternion.AngleAxis(180.0f, Vector3.up);
+            m_cameraRig.transform.rotation = m_cameraRig.transform.rotation * q;
         }
 
         // Spawn sync entity
@@ -648,11 +753,16 @@ public class GameMan : MonoBehaviour
                 trs = m_leftHand.transform;
             }
 
-            if (Time.time > m_leftLastBulletTime + m_leftRPS)
+            if (CanFire() == true)
             {
-                m_leftLastBulletTime = Time.time;
-                Quaternion q = Quaternion.LookRotation(m_leftHand.transform.right);
-                player.SpawnMyTool(trs.position, q);
+                if (Time.time > m_leftLastBulletTime + m_leftRPS)
+                {
+                    m_leftLastBulletTime = Time.time;
+                    Quaternion q = Quaternion.LookRotation(m_leftHand.transform.right);
+                    player.SpawnMyTool(trs.position, q);
+                    m_ammoCount--;
+                    SetPlayerInfoText();
+                }
             }
         }
         if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
@@ -666,11 +776,16 @@ public class GameMan : MonoBehaviour
             }
             Transform trs = m_rightHand.transform;
 
-            if (Time.time > m_rightLastBulletTime + m_rightRPS)
+            if (CanFire() == true)
             {
-                m_rightLastBulletTime = Time.time;
-                Quaternion q = Quaternion.LookRotation(-m_rightHand.transform.right);
-                player.SpawnMyTool(trs.position, q);
+                if (Time.time > m_rightLastBulletTime + m_rightRPS)
+                {
+                    m_rightLastBulletTime = Time.time;
+                    Quaternion q = Quaternion.LookRotation(-m_rightHand.transform.right);
+                    player.SpawnMyTool(trs.position, q);
+                    m_ammoCount--;
+                    SetPlayerInfoText();
+                }
             }
         }
 
@@ -706,6 +821,7 @@ public class GameMan : MonoBehaviour
         m_leftRPS = 0.2f;
 
         StartCoroutine(RestoreRPS(8.0f, true, true, 1.0f));
+        StartCoroutine(DestroyElementDelayed(5.0f, elem));
     }
 
 
@@ -722,5 +838,15 @@ public class GameMan : MonoBehaviour
         {
             m_leftRPS = newVal;
         }
+    }
+
+
+    // Set right or left or both RPS to newVal in waitSec
+    public IEnumerator DestroyElementDelayed(float waitSec, ElementsScript elem)
+    {
+        yield return new WaitForSeconds(waitSec);
+
+        m_elemCubes.Remove(elem);
+        GameObject.Destroy(elem);
     }
 }

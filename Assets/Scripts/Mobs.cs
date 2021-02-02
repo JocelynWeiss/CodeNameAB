@@ -11,7 +11,7 @@ public class Mobs : NetworkBehaviour
 {
     public MobsType m_mobType = MobsType.MobA;
     public string m_name;
-    [SyncVar] public float m_life;
+    [SyncVar(hook = nameof(SetMobLife))] public float m_life;
     [SyncVar] public float m_armor;
     public float m_speedFactor = 0.5f;
     [ViewOnly] public float m_curSpeedFactor = 0.0f; // computed from m_speedFactor
@@ -89,7 +89,7 @@ public class Mobs : NetworkBehaviour
 
         if (gameObject.activeSelf == true)
         {
-            if (life < 1.0f) // A mob need at least 1pv
+            if (m_life < 1.0f) // A mob need at least 1pv
             {
                 Debug.Log($"{Time.fixedTime}s Mob is DEAD !");
                 gameObject.SetActive(false);
@@ -115,5 +115,28 @@ public class Mobs : NetworkBehaviour
     void Update()
     {
         
+    }
+
+
+    // Called on clients whenever the server is updating
+    private void SetMobLife(float oldVal, float newVal)
+    {
+        Debug.Log($"{Time.fixedTime}s Updating mob {name} life from {oldVal} to {newVal} now {m_life}");
+    }
+
+
+    // Called on Client when a part is detroyed on server
+    [ClientRpc] public void RpcOnPartDestroyed(string partName)
+    {
+        GameObject go = transform.Find(partName).gameObject;
+        if (go)
+        {
+            Debug.Log($"{Time.fixedTime}s detroying mob part {partName}");
+            go.SetActive(false);
+        }
+        else
+        {
+            Debug.Log($"{Time.fixedTime}s CAN'T detroy mob part {partName} from {name}");
+        }
     }
 }

@@ -72,9 +72,11 @@ public class MobPart : MonoBehaviour
             TakeDamage(bullet.m_damageLife, bullet.m_damageArmour);
 
             // If no armour and no life, the part is destroyed
+            bool sendToClient = false;
             if ((m_curArmorP == 0.0f) && (m_curLifeP == 0.0f))
             {
                 gameObject.SetActive(false);
+                sendToClient = true;
             }
 
             Mobs mob = transform.parent.gameObject.GetComponent<Mobs>();
@@ -83,6 +85,11 @@ public class MobPart : MonoBehaviour
                 Vector3 pos = mob.transform.position;
                 pos += collision.relativeVelocity * bullet.m_pushbackForce;
                 mob.transform.SetPositionAndRotation(pos, mob.transform.rotation);
+
+                if (sendToClient)
+                {
+                    mob.RpcOnPartDestroyed(name);
+                }
 
                 mob.CalcLifeAndArmor();
             }
