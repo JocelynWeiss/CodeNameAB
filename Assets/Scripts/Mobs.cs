@@ -4,7 +4,7 @@ using UnityEngine;
 using Mirror;
 
 
-public enum MobsType { MobA, MobB, MobC}
+public enum MobsType { MobA, MobB, MobC, MobMedic}
 
 
 public class Mobs : NetworkBehaviour
@@ -16,6 +16,9 @@ public class Mobs : NetworkBehaviour
     public float m_speedFactor = 0.5f;
     [ViewOnly] public float m_curSpeedFactor = 0.0f; // computed from m_speedFactor
     public List<MobPart> m_parts = new List<MobPart>();
+
+    Mobs m_patient = null; // For medic, their actual patient
+    float m_animPhase = 0.0f; // So they are not all on the same path
 
 
     
@@ -39,6 +42,17 @@ public class Mobs : NetworkBehaviour
                 m_name = "MobC";
                 //m_speedFactor = 0.25f;
                 break;
+            case MobsType.MobMedic:
+                m_name = "MobMedic";
+                //m_life = 8.0f;
+
+                if (m_parts.Count > 0)
+                {
+                    m_parts[0].m_lifeAddon = 8.0f;
+                }
+
+                m_speedFactor = 0.75f;
+                break;
             default:
                 m_name = "WrongMob";
                 m_life = 0.0f;
@@ -48,20 +62,20 @@ public class Mobs : NetworkBehaviour
         }
 
         CalcLifeAndArmor();
-        Debug.Log($"{Time.fixedTime}s OnStartServer---");
+        JowLogger.Log($"{Time.fixedTime}s OnStartServer---");
     }
 
 
     public override void OnStartClient()
     {
-        Debug.Log($"{Time.fixedTime}s OnStartClient---");
+        JowLogger.Log($"{Time.fixedTime}s OnStartClient---");
     }
 
 
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Log($"{Time.fixedTime}s Start--- {name}");
+        JowLogger.Log($"{Time.fixedTime}s Start--- {name}");
     }
 
 
@@ -85,13 +99,13 @@ public class Mobs : NetworkBehaviour
         m_armor = armor;
         m_curSpeedFactor = m_speedFactor + speed;
 
-        Debug.Log($"{Time.fixedTime}s {name} {m_life}pv");
+        JowLogger.Log($"{Time.fixedTime}s {name} {m_life}pv");
 
         if (gameObject.activeSelf == true)
         {
             if (m_life < 1.0f) // A mob need at least 1pv
             {
-                Debug.Log($"{Time.fixedTime}s Mob is DEAD !");
+                JowLogger.Log($"{Time.fixedTime}s Mob is DEAD !");
                 gameObject.SetActive(false);
                 GameMan.s_instance.MobIsDead(this);
             }
@@ -103,7 +117,7 @@ public class Mobs : NetworkBehaviour
             float mainLife = m_parts[0].m_curLifeP;
             if (mainLife <= 0.0f)
             {
-                Debug.Log($"{Time.fixedTime}s Mob is DEAD ! main part destroyed");
+                JowLogger.Log($"{Time.fixedTime}s Mob is DEAD ! main part destroyed");
                 gameObject.SetActive(false);
                 GameMan.s_instance.MobIsDead(this);
             }
@@ -111,17 +125,90 @@ public class Mobs : NetworkBehaviour
     }
 
 
-    // Update is called once per frame
-    void Update()
+    // Gameplay update
+    private void FixedUpdate()
     {
-        
+        if (NetworkManager.singleton.mode != NetworkManagerMode.Host)
+            return;
+
+        if (m_mobType == MobsType.MobMedic)
+        {
+            if (m_patient == null)
+            {
+                FindPatient();
+            }
+            if (m_patient == null)
+            {
+                // Find closest pillar, advance on it
+                GameObject pillar = GameMan.s_instance.GetClosestPillar(transform.position);
+                Vector3 forward = pillar.transform.position - transform.position;
+
+                if (forward.magnitude > 3.0f)
+                {
+                    forward.Normalize();
+                    transform.position += forward * m_curSpeedFactor * Time.fixedDeltaTime;
+                }
+                else
+                {
+                    // Damage to death
+                    m_parts[0].TakeDamage(5.0f * Time.fixedDeltaTime, 5.0f * Time.fixedDeltaTime);
+                    CalcLifeAndArmor();
+                }
+
+                return;
+            }
+
+            float angle = Time.fixedTime * m_curSpeedFactor + m_animPhase;
+            float heightAngle = angle * m_animPhase * 0.2f;
+            float radius = 1.0f;
+            radius = 2.0f + Mathf.Sin(m_animPhase + Time.fixedTime * m_curSpeedFactor * 0.1f);
+            transform.position = m_patient.transform.position + new Vector3(Mathf.Cos(angle), Mathf.Cos(heightAngle) * Mathf.Sin(heightAngle), Mathf.Sin(angle)) * radius;
+        }
     }
 
 
     // Called on clients whenever the server is updating
     private void SetMobLife(float oldVal, float newVal)
     {
-        Debug.Log($"{Time.fixedTime}s Updating mob {name} life from {oldVal} to {newVal} now {m_life}");
+        JowLogger.Log($"{Time.fixedTime}s Updating mob {name} life from {oldVal} to {newVal} now {m_life}");
+    }
+
+
+    // Change type for this mob (should be done before network spawning)
+    public void ChangeType(MobsType _Type, float _Phase = 0.0f)
+    {
+        //JowLogger.Log($"{Time.fixedTime}s Change type mob {name} from {m_mobType} to {_Type} with phase {_Phase}");
+        m_mobType = _Type;
+        m_animPhase = _Phase;
+    }
+
+
+    // Return current patient if any or null
+    public Mobs GetCurPatient()
+    {
+        return m_patient;
+    }
+
+
+    // Set current patient to _patient (may be null)
+    public void SetPatient(Mobs _patient)
+    {
+        m_patient = _patient;
+    }
+
+
+    // Find a patient for a medic
+    public Mobs FindPatient()
+    {
+        foreach (Mobs target in GameMan.s_instance.m_wave.m_mobs)
+        {
+            if ((target.m_mobType != MobsType.MobMedic) && (target.m_life < 500.0f) && (target.m_life > 1.0f))
+            {
+                m_patient = target;
+                return m_patient;
+            }
+        }
+        return null;
     }
 
 
@@ -131,12 +218,12 @@ public class Mobs : NetworkBehaviour
         GameObject go = transform.Find(partName).gameObject;
         if (go)
         {
-            Debug.Log($"{Time.fixedTime}s detroying mob part {partName}");
+            JowLogger.Log($"{Time.fixedTime}s detroying mob part {partName}");
             go.SetActive(false);
         }
         else
         {
-            Debug.Log($"{Time.fixedTime}s CAN'T detroy mob part {partName} from {name}");
+            JowLogger.Log($"{Time.fixedTime}s CAN'T detroy mob part {partName} from {name}");
         }
     }
 }

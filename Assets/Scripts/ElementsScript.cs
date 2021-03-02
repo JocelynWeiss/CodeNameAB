@@ -22,7 +22,7 @@ public class ElementsScript : MonoBehaviour
         /*
         if (m_grabbable == null)
         {
-            Debug.Log($"Getting grabbable from parent...");
+            JowLogger.Log($"Getting grabbable from parent...");
             m_grabbable = transform.parent.GetComponent<ColorGrabbable>();
             if (m_grabbable == null)
             {
@@ -36,7 +36,7 @@ public class ElementsScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Log($"ElementsScript {name} {m_elemType} Start @ {Time.fixedTime}s");
+        JowLogger.Log($"ElementsScript {name} {m_elemType} Start @ {Time.fixedTime}s");
     }
 
 

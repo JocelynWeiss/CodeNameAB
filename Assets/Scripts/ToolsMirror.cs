@@ -33,7 +33,7 @@ public class ToolsMirror : NetworkBehaviour
         }
         else
         {
-            //Debug.Log($"{gameObject} OnStartClient @ {Time.fixedTime}s m_syncColor {m_syncColor}.");
+            //JowLogger.Log($"{gameObject} OnStartClient @ {Time.fixedTime}s m_syncColor {m_syncColor}.");
             m_renderer.material.color = m_syncColor; // To test
         }
 
@@ -60,7 +60,7 @@ public class ToolsMirror : NetworkBehaviour
             m_renderer = GetComponent<Renderer>();
         }
 
-        //Debug.Log($"{gameObject} SetToolColour @ {Time.fixedTime}s m_syncColor {m_syncColor} newCol {newCol}");
+        //JowLogger.Log($"{gameObject} SetToolColour @ {Time.fixedTime}s m_syncColor {m_syncColor} newCol {newCol}");
         m_renderer.material.color = newCol;
         m_syncColor = newCol;
     }

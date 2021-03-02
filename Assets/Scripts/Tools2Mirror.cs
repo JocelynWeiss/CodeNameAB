@@ -28,7 +28,7 @@ public class Tools2Mirror : NetworkBehaviour
         }
         else
         {
-            Debug.Log($"{gameObject} OnStartClient @ {Time.fixedTime}s m_syncColor {m_myColor}, authority= {hasAuthority}.");
+            JowLogger.Log($"{gameObject} OnStartClient @ {Time.fixedTime}s m_syncColor {m_myColor}, authority= {hasAuthority}.");
             m_renderer.material.color = m_myColor;
         }
 
@@ -38,7 +38,7 @@ public class Tools2Mirror : NetworkBehaviour
 
     public override void OnStartServer()
     {
-        Debug.Log($"{gameObject} OnStartServer @ {Time.fixedTime}s.");
+        JowLogger.Log($"{gameObject} OnStartServer @ {Time.fixedTime}s.");
         m_spawnTime = Time.fixedTime;
     }
 
@@ -52,7 +52,7 @@ public class Tools2Mirror : NetworkBehaviour
 
         if (m_renderer)
         {
-            Debug.Log($"{gameObject} SetToolColour @ {Time.fixedTime}s m_syncColor {m_myColor} newCol {newCol}");
+            JowLogger.Log($"{gameObject} SetToolColour @ {Time.fixedTime}s m_syncColor {m_myColor} newCol {newCol}");
             m_renderer.material.color = newCol;
             m_myColor = newCol;
         }

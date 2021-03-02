@@ -50,15 +50,15 @@ public class PlayerControlMirror : NetworkBehaviour
         Quaternion q = Quaternion.identity;
         transform.SetPositionAndRotation(new Vector3(1.0f + GameMan.s_instance.m_playerNb, 2.0f, 1.0f), q);
 
-        Debug.Log($"Creating client {n} --->netId {netid}: {this} OnStartClient @ {Time.fixedTime}s hasAuthority {hasAuthority}");
-        Debug.Log($"{transform.position}");
+        JowLogger.Log($"Creating client {n} --->netId {netid}: {this} OnStartClient @ {Time.fixedTime}s hasAuthority {hasAuthority}");
+        JowLogger.Log($"{transform.position}");
         /*
         if (hasAuthority)
         {
             Vector3 newCol = Random.insideUnitSphere;
             m_syncColor = new Color(newCol.x, newCol.y, newCol.z);
             c = m_syncColor;
-            Debug.Log($"\t {m_syncColor}");
+            JowLogger.Log($"\t {m_syncColor}");
         }
         else
         {
@@ -78,11 +78,11 @@ public class PlayerControlMirror : NetworkBehaviour
     {
         if (isServer)
         {
-            Debug.Log($"{NetworkManager.singleton.numPlayers} +++ {this} NetId= {netId} Start @ {Time.fixedTime}s");
+            JowLogger.Log($"{NetworkManager.singleton.numPlayers} +++ {this} NetId= {netId} Start @ {Time.fixedTime}s");
         }
         else
         {
-            Debug.Log($"+++ {this} NetId= {netId} Start @ {Time.fixedTime}s numPlayers {NetworkManager.singleton.numPlayers} over gameMan playerNb {GameMan.s_instance.m_playerNb}");
+            JowLogger.Log($"+++ {this} NetId= {netId} Start @ {Time.fixedTime}s numPlayers {NetworkManager.singleton.numPlayers} over gameMan playerNb {GameMan.s_instance.m_playerNb}");
         }
 
         //transform.SetPositionAndRotation(new Vector3(1.0f, 1.0f, 1.0f), Quaternion.identity);
@@ -95,13 +95,13 @@ public class PlayerControlMirror : NetworkBehaviour
         if (m_renderer == null)
         {
             m_renderer = GetComponent<Renderer>();
-            Debug.Log($"========================= Setting color from {oldColor} to {newColor} @ {Time.fixedTime}s m_syncColor {m_syncColor}"); // JowTodo: Why is this called every frame ?
+            JowLogger.Log($"========================= Setting color from {oldColor} to {newColor} @ {Time.fixedTime}s m_syncColor {m_syncColor}"); // JowTodo: Why is this called every frame ?
         }
 
         //m_syncColor = newColor;
         m_renderer.material.color = m_syncColor;
         //m_renderer.material.color = newColor;
-        //Debug.Log($"MMMMMMMMMMMMMMM Setting color from {oldColor} to {newColor} @ {Time.fixedTime}s m_syncColor {m_syncColor}");
+        //JowLogger.Log($"MMMMMMMMMMMMMMM Setting color from {oldColor} to {newColor} @ {Time.fixedTime}s m_syncColor {m_syncColor}");
     }
 
 
@@ -234,7 +234,7 @@ public class PlayerControlMirror : NetworkBehaviour
         if (m_syncColor != curCol)
         {
             m_renderer.material.color = m_syncColor;
-            //Debug.Log($"========================= Seting color to {m_syncColor} @ {Time.fixedTime}s"); // JowTodo: Why is this called every frame ?
+            //JowLogger.Log($"========================= Seting color to {m_syncColor} @ {Time.fixedTime}s"); // JowTodo: Why is this called every frame ?
         }
         */
     }
@@ -264,8 +264,17 @@ public class PlayerControlMirror : NetworkBehaviour
         {
             //curCol = m_syncColor;
             m_renderer.material.color = m_syncColor;
-            Debug.Log($"========================= Seting color to {m_syncColor} @ {Time.fixedTime}s");
+            JowLogger.Log($"========================= Seting color to {m_syncColor} @ {Time.fixedTime}s");
         }
         */
+    }
+
+
+    // Update wave nb on the client (execute on the host as well of course)
+    [ClientRpc]
+    public void RpcWaveNb(int newWaveNb)
+    {
+        JowLogger.Log($"newWaveNb = {newWaveNb}");
+        GameMan.s_instance.m_waveNb = newWaveNb;
     }
 }

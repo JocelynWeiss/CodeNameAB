@@ -7,7 +7,9 @@ using OculusSampleFramework;
 
 
 // A game manager dedicated to test mirror networking services...
-//JowNext: Add a game over if no more life
+//JowNext: Sync Pillars... Add a game over if no more life
+// Sync end of wave to elevate client pillars, use RPC in PlayerControlMirror
+// AmmoCount should be sync in PlayerControlMirror as well
 
 
 
@@ -24,6 +26,7 @@ public enum Elements
 public class GameMan : MonoBehaviour
 {
     public static GameMan s_instance = null;
+    public static JowLogger s_log;
 
     TextMeshProUGUI m_logTitle;
 
@@ -75,8 +78,6 @@ public class GameMan : MonoBehaviour
 
     public void Awake()
     {
-        Debug.Log($"GameMan Awake @ {Time.fixedTime}s");
-
         // make sure only one instance of this manager ever exists
         if (s_instance != null)
         {
@@ -86,6 +87,15 @@ public class GameMan : MonoBehaviour
 
         s_instance = this;
         DontDestroyOnLoad(gameObject);
+
+        if (s_log == null)
+        {
+            s_log = new JowLogger();
+            if (UnityEngine.Application.platform != RuntimePlatform.Android)
+                JowLogger.m_addTimeToName = true; // only to avoid collision with multiple instances
+        }
+
+        JowLogger.Log($"GameMan Awake @ {Time.fixedTime}s Version {Application.version}");
 
         Canvas myCanvas = GameObject.Find("Canvas").gameObject.GetComponent<Canvas>();
         if (myCanvas != null)
@@ -115,12 +125,6 @@ public class GameMan : MonoBehaviour
 
         m_wave = new WaveClass();
         m_playerNb = 0;
-
-        // Add few pillars for players seats
-        GameObject pillarGo = GameObject.Find("PillarA");
-        m_pillarsPool.Add(pillarGo);
-        pillarGo = GameObject.Find("PillarB");
-        m_pillarsPool.Add(pillarGo);
     }
 
 
@@ -128,7 +132,34 @@ public class GameMan : MonoBehaviour
     void Start()
     {
         m_netMan.networkAddress = "localhost"; // overwrite public field when not at Henigma...
-        Debug.Log($"GameMan Init @ {Time.fixedTime}s");
+        JowLogger.Log($"GameMan Init @ {Time.fixedTime}");
+        JowLogger.m_logTime = true;
+    }
+
+
+    // Terminate the game
+    private void OnDestroy()
+    {
+        s_log.Close();
+    }
+
+
+    public GameObject GetClosestPillar(Vector3 _pos)
+    {
+        GameObject ret = null;
+        float dist = float.MaxValue;
+
+        foreach (GameObject go in m_pillarsPool)
+        {
+            float d = (_pos - go.transform.position).magnitude;
+            if (d < dist)
+            {
+                dist = d;
+                ret = go;
+            }
+        }
+
+        return ret;
     }
 
 
@@ -223,11 +254,14 @@ public class GameMan : MonoBehaviour
     }
 
 
+    // Initialise the next wave to come
     public void InitNewWave()
     {
         m_waveNb++;
+        m_myAvatar.RpcWaveNb(m_waveNb);
         m_nextWaveTime = 0.0f;
         m_wave.InitWave(m_waveNb);
+        //m_logTitle.text = $"Mobs {m_wave.m_mobs.Count}";
 
         m_playerLifeBar.m_maximum = 1000;
         m_playerLifeBar.m_cur = 1000.0f;
@@ -258,13 +292,23 @@ public class GameMan : MonoBehaviour
 
     void SetPlayerInfoText()
     {
-        m_playerInfoText.text = $"Wave {m_waveNb}\nAmmo {m_ammoCount}";
+        m_playerInfoText.text = $"Wave {m_waveNb}\nAmmo {m_ammoCount} MobNb {m_wave.m_mobs.Count}";
     }
 
 
     // Executed on any client even the host
     public void RegisterNewPlayer(GameObject newPlayer, bool hasAuthority)
     {
+        // Process some init here as we are sure the server is runing then
+        if (m_playerNb == 0)
+        {
+            // Add few pillars for players seats (4?)
+            GameObject pillarGo = GameObject.Find("PillarA");
+            m_pillarsPool.Add(pillarGo);
+            pillarGo = GameObject.Find("PillarB");
+            m_pillarsPool.Add(pillarGo);
+        }
+
         PlayerControlMirror player = newPlayer.GetComponent<PlayerControlMirror>();
         if (hasAuthority)
         {
@@ -283,7 +327,9 @@ public class GameMan : MonoBehaviour
         }
 
         m_playerNb++;
-        Debug.Log($"---+++ Registering new player @ {Time.fixedTime}s, {newPlayer}, netId {player.netId}, m_playerNb {m_playerNb}");
+        JowLogger.Log($"---+++ Registering new player @ {Time.fixedTime}s, {newPlayer}, netId {player.netId}, m_playerNb {m_playerNb}");
+        JowLogger.Log($"on pillar {m_myPillar.name}");
+        player.RpcWaveNb(m_waveNb); // Send current wave nb
     }
 
 
@@ -294,9 +340,9 @@ public class GameMan : MonoBehaviour
             m_myAvatar.m_tool = tool;
         }
 
-        //Debug.Log($"+++ Registering new tool2 @ {Time.fixedTime}s, {tool}, netId {tool.netId}, authority= {hasAuthority}, isLocalPlayer {player.isLocalPlayer}");
+        //JowLogger.Log($"+++ Registering new tool2 @ {Time.fixedTime}s, {tool}, netId {tool.netId}, authority= {hasAuthority}, isLocalPlayer {player.isLocalPlayer}");
 
-        Debug.Log($"+++ Registering new tool2 @ {Time.fixedTime}s, {tool}, netId {tool.netId}, authority= {hasAuthority}");
+        JowLogger.Log($"+++ Registering new tool2 @ {Time.fixedTime}s, {tool}, netId {tool.netId}, authority= {hasAuthority}");
     }
 
 
@@ -316,13 +362,29 @@ public class GameMan : MonoBehaviour
         {
             WaveEnded();
         }
+
+        // No more patient for medics
+        ReleasePatients(deadMob);
+    }
+
+
+    // Set patient pointer to null
+    public void ReleasePatients(Mobs deadMob)
+    {
+        foreach (Mobs mob in m_wave.m_mobs)
+        {
+            if (mob.GetCurPatient() == deadMob)
+            {
+                mob.SetPatient(null);
+            }
+        }
     }
 
 
     // End of a wave (no mobs left)
     void WaveEnded()
     {
-        Debug.Log($"{Time.fixedTime}s, All mobs of the wave {m_waveNb} are dead. GG ! ({m_wave.m_deathNb})");
+        JowLogger.Log($"{Time.fixedTime}s, All mobs of the wave {m_waveNb} are dead. GG ! ({m_wave.m_deathNb})");
         m_wave.FinishWave();
         m_nextWaveTime = Time.fixedTime + 5.0f;
 
@@ -369,7 +431,7 @@ public class GameMan : MonoBehaviour
         if (m_myAvatar.isServer == false)
             return;
 
-        // Launch Phase 1
+        // Launch Next Phase
         if (m_nextWaveTime > 0.0f)
         {
             string t = $"Next Wave in {(m_nextWaveTime - Time.fixedTime).ToString("f1")}s";
@@ -377,6 +439,7 @@ public class GameMan : MonoBehaviour
 
             if (Time.fixedTime > m_nextWaveTime)
             {
+                //m_logTitle.text = $"Pount {m_pillarsPool.Count}";
                 InitNewWave();
                 /*
                 if (m_MobA)
@@ -396,6 +459,7 @@ public class GameMan : MonoBehaviour
         }
         else
         {
+            // Launch Phase 1
             if (m_waveNb == 0)
             {
                 m_nextWaveTime = Time.fixedTime + 5.0f;
@@ -406,13 +470,18 @@ public class GameMan : MonoBehaviour
         // Handle mobs mouvements
         if (m_wave.m_mobs.Count > 0)
         {
-            Vector3 forward = new Vector3(0.0f, 0.0f, -1.0f) * Time.fixedDeltaTime;
             foreach (Mobs mob in m_wave.m_mobs)
             {
                 if (mob.isActiveAndEnabled == false)
                     continue;
 
-                if (mob.transform.position.z > 1.5f)
+                if (mob.m_mobType == MobsType.MobMedic) // Self handed
+                    continue;
+
+                Vector3 forward = mob.transform.forward * Time.fixedDeltaTime;
+                float dist = (mob.transform.position - m_myPillar.transform.position).magnitude;
+
+                if (dist > 3.0f)
                 {
                     mob.transform.position += forward * mob.m_curSpeedFactor;
                 }
@@ -427,6 +496,8 @@ public class GameMan : MonoBehaviour
             float life = m_playerLifeBar.m_cur - hitAmount * Time.fixedDeltaTime;
             m_playerLifeBar.m_cur = life;
         }
+
+        //TestRotatingElem();
     }
 
 
@@ -443,10 +514,37 @@ public class GameMan : MonoBehaviour
     }
 
 
+    void TestRotatingElem()
+    {
+        if (m_elemCubes.Count == 0)
+            return;
+
+        if (m_wave.m_mobs.Count == 0)
+            return;
+
+        ElementsScript elem = m_elemCubes[0];
+        Mobs mob = m_wave.m_mobs[0];
+        Vector3 mobPos = mob.transform.position;
+        Vector3 dec = new Vector3(0.0f, 1.0f, 0.0f);
+        Vector3 pos = mobPos + dec;
+        //float angle = Mathf.Sin(Time.fixedTime) * Mathf.PI;
+        float angle = Time.fixedTime;
+        //pos += new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * 1.0f;
+        pos += new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), Mathf.Sin(angle)) * 1.0f;
+        elem.transform.position = pos;
+
+        // Second one
+        float phase = 100.0f;
+        angle += phase;
+        pos = mobPos + new Vector3(Mathf.Cos(angle), Mathf.Cos(angle) * Mathf.Sin(angle), Mathf.Sin(angle)) * 1.0f;
+        m_elemCubes[1].transform.position = pos;
+    }
+
+
     // Update is called once per frame
     void Update()
     {
-        m_logTitle.text = $"{Time.fixedTime}s\n{m_netMan.networkAddress}\n{m_lastConnected}s";
+        //m_logTitle.text = $"{Time.fixedTime}s\n{m_netMan.networkAddress}\n{m_lastConnected}s"; // Put back
 
         if (m_avatar)
         {
@@ -454,7 +552,7 @@ public class GameMan : MonoBehaviour
             if (m_wave.m_mobs.Count > 0)
                 mobLife = m_wave.m_mobs[0].m_life.ToString("f2");
 
-            m_logTitle.text = $"{m_avatar.transform.position}\n{mobLife}";
+            //m_logTitle.text = $"{m_avatar.transform.position}\n{mobLife}"; // Put back
         }
 
         if (!m_netMan.isNetworkActive)
@@ -484,13 +582,19 @@ public class GameMan : MonoBehaviour
             {
                 if (Time.time < m_nextWaveTime)
                 {
-                    Vector3 pos = m_myPillar.transform.position;
-                    pos.y += 0.1f * Time.deltaTime;
-                    m_myPillar.transform.position = pos;
+                    if (m_netMan.mode == NetworkManagerMode.Host)
+                    {
+                        Vector3 pos = m_myPillar.transform.position;
+                        pos.y += 0.1f * Time.deltaTime;
+                        m_myPillar.transform.position = pos;
+                    }
 
+                    /*
                     pos = m_cameraRig.transform.position;
                     pos.y += 0.1f * Time.deltaTime;
                     m_cameraRig.transform.position = pos;
+                    */
+                    m_cameraRig.transform.position = m_myPillar.transform.position + new Vector3(0.0f, 1.8f, 0.0f);
                 }
             }
         }

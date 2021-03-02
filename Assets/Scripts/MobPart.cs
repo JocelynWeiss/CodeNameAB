@@ -55,7 +55,7 @@ public class MobPart : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        Debug.Log($"{Time.fixedTime}s collision {collision.gameObject.name}");
+        JowLogger.Log($"{Time.fixedTime}s collision {collision.gameObject.name}");
 
         ToolsMirror bullet = collision.gameObject.GetComponent<ToolsMirror>();
         if (bullet == null)
