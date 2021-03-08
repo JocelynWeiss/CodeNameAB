@@ -338,7 +338,8 @@ public class PlayerControlMirror : NetworkBehaviour
         GameObject elemPrefab = NetworkManager.singleton.spawnPrefabs[5];
         if (elemPrefab)
         {
-            Vector3 pos = m_myPillar.transform.position + new Vector3(-0.5f, 1.8f + ((float)m_myElems.Count * 0.2f), 0.0f);
+            int count = m_myElems.Count + 1;
+            Vector3 pos = m_myPillar.transform.position + new Vector3(-0.5f, 2.0f + ((float)count * 0.2f), 0.0f);
             pos += m_myPillar.transform.forward * 0.2f;
             GameObject newCube = Instantiate(elemPrefab, pos, Quaternion.identity);
             newCube.transform.position = pos + new Vector3(0.0f, 0.0f, 0.0f);

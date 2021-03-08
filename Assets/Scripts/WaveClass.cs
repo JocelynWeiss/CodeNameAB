@@ -55,7 +55,7 @@ public class WaveClass
         spawnPoint2.y += 3.0f;
 
         GameObject mobAPrefab = NetworkManager.singleton.spawnPrefabs[2];
-        if ((hint == 1) || (hint > 6))
+        if ((hint == 1) || (hint > 7))
         {
             float y = 0.75f + hint * 0.8f;
             y = pillarPos.y + 3.0f;
@@ -167,13 +167,49 @@ public class WaveClass
                 NetworkServer.Spawn(mobGo);
             }
         }
+		
+		if (hint == 7)
+		{
+			GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[3]; // Mob with plate armour
+            if (mobBPrefab)
+            {
+                float y = pillarPos.y + 3.0f;
+                Vector3 spawnPoint = new Vector3(0.0f, y, 5.0f);
+                spawnPoint = spawnPoint2;
+                GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, facing);
+                mobGo.name = "NewMobB";
+                Mobs mob = mobGo.GetComponent<Mobs>();
+                m_mobs.Add(mob);
 
+                mob.CalcLifeAndArmor();
+
+                NetworkServer.Spawn(mobGo);
+            }
+			
+			GameObject mobCPrefab = NetworkManager.singleton.spawnPrefabs[4]; // Mob with legs
+            if (mobCPrefab)
+            {
+                float y = pillarPos.y + 3.0f;
+                Vector3 spawnPoint = new Vector3(3.0f, y, 5.0f);
+                spawnPoint = spawnPoint2;
+                GameObject mobGo = GameObject.Instantiate(mobCPrefab, spawnPoint, facing);
+                mobGo.name = "NewMobC";
+                Mobs mob = mobGo.GetComponent<Mobs>();
+                m_mobs.Add(mob);
+
+                mob.CalcLifeAndArmor();
+
+                NetworkServer.Spawn(mobGo);
+            }
+		}
+		
         // Add medics
-        /*
-        AddMedicMob();
-        AddMedicMob();
-        AddMedicMob();
-        //*/
+        if ((hint == 2) || (hint > 7))
+		{
+			AddMedicMob();
+			AddMedicMob();
+			AddMedicMob();
+		}
 
         // restore random state
         Random.state = rndState;
