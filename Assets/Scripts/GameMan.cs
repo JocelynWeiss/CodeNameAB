@@ -60,7 +60,7 @@ public class GameMan : MonoBehaviour
     private bool m_doubleShot = false;
     public OVRCameraRig m_cameraRig;
 
-    Material[] m_CubesElemMats = new Material[4];
+    public Material[] m_CubesElemMats = new Material[4];
     public int m_startElementCount = 4;
     public GameObject m_elementCubePrefab;
     List<ElementsScript> m_elemCubes = new List<ElementsScript>();
@@ -214,6 +214,7 @@ public class GameMan : MonoBehaviour
     // Instantiate a new element
     void AddNewElement(PillarMirror _pillar)
     {
+        return;
         int count = m_elemCubes.Count;
         GameObject obj = GameObject.Instantiate(m_elementCubePrefab);
         obj.name = $"Elem_{count}";
@@ -673,6 +674,16 @@ public class GameMan : MonoBehaviour
                             pos.y += 0.1f * Time.deltaTime;
                             go.transform.position = pos;
                         }
+
+                        foreach (PlayerControlMirror plr in m_allPlayers)
+                        {
+                            foreach (ElementsScript elem in plr.m_myElems)
+                            {
+                                Vector3 pos = elem.transform.position;
+                                pos.y += 0.1f * Time.deltaTime;
+                                elem.transform.position = pos;
+                            }
+                        }
                     }
 
                     /*
@@ -747,7 +758,18 @@ public class GameMan : MonoBehaviour
         // Activate first unused element
         if (Input.GetKeyUp(KeyCode.L))
         {
+            /*
             foreach (ElementsScript elem in m_elemCubes)
+            {
+                if (elem.m_used == false)
+                {
+                    elem.GetColorGrabbable().m_lastGrabbed = Time.time;
+                    elem.transform.position = m_cameraRig.transform.position + Vector3.up * 2.0f;
+                    break;
+                }
+            }
+            */
+            foreach (ElementsScript elem in m_myAvatar.m_myElems)
             {
                 if (elem.m_used == false)
                 {
@@ -1009,6 +1031,14 @@ public class GameMan : MonoBehaviour
         }
 
         StartCoroutine(DestroyElementDelayed(5.0f, elem));
+
+        foreach (PlayerControlMirror plr in m_allPlayers)
+        {
+            if (plr.m_myElems.Contains(elem))
+            {
+                plr.m_myElems.Remove(elem);
+            }
+        }
     }
 
 

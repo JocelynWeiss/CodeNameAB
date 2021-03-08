@@ -25,6 +25,7 @@ public class PlayerControlMirror : NetworkBehaviour
     public float m_curHitAmount = 0.0f; // cumulated hits taken in current frame
 
     public PillarMirror m_myPillar;
+    public List<ElementsScript> m_myElems = new List<ElementsScript>();
 
 
     public override void OnStartClient()
@@ -314,6 +315,7 @@ public class PlayerControlMirror : NetworkBehaviour
         GameMan.s_instance.m_playerLifeBar.m_cur = m_curLife;
         GameMan.s_instance.SetPlayerInfoText();
         GameMan.s_instance.m_logTitle.text = "";
+        LoadElements();
     }
 
 
@@ -327,6 +329,24 @@ public class PlayerControlMirror : NetworkBehaviour
         if (_nextTime > 0.0f)
         {
             AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[4], transform.position);
+        }
+    }
+
+
+    [Command] public void LoadElements()
+    {
+        GameObject elemPrefab = NetworkManager.singleton.spawnPrefabs[5];
+        if (elemPrefab)
+        {
+            Vector3 pos = m_myPillar.transform.position + new Vector3(-0.5f, 1.8f + ((float)m_myElems.Count * 0.2f), 0.0f);
+            pos += m_myPillar.transform.forward * 0.2f;
+            GameObject newCube = Instantiate(elemPrefab, pos, Quaternion.identity);
+            newCube.transform.position = pos + new Vector3(0.0f, 0.0f, 0.0f);
+            ElementsScript elem = newCube.GetComponent<ElementsScript>();
+            int matId = Random.Range(0, 4);
+            elem.ChangeType((Elements)matId, GameMan.s_instance.m_CubesElemMats[matId]);
+            NetworkServer.Spawn(newCube);
+            m_myElems.Add(elem);
         }
     }
 }
