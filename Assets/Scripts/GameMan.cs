@@ -9,7 +9,6 @@ using OculusSampleFramework;
 // A game manager dedicated to test mirror networking services...
 //JowNext: Sync Pillars... Add a game over if no more life
 // Sync end of wave to elevate client pillars, use RPC in PlayerControlMirror
-// AmmoCount should be sync in PlayerControlMirror as well
 
 
 
@@ -28,16 +27,14 @@ public class GameMan : MonoBehaviour
     public static GameMan s_instance = null;
     public static JowLogger s_log;
 
-    TextMeshProUGUI m_logTitle;
+    public TextMeshProUGUI m_logTitle;
 
     public NetworkManager m_netMan;
 
-    public int m_playerNb = 0;
+    public List<PlayerControlMirror> m_allPlayers = new List<PlayerControlMirror>();
     private float m_lastConnected = 0.0f;
-    private GameObject m_avatar; // Deprecated, Todo: remove me
     private PlayerControlMirror m_myAvatar;
     List<GameObject> m_pillarsPool = new List<GameObject>();
-    private GameObject m_myPillar; // The pillar where this avatar is sitting on
     public float m_upForce = 300.0f;
     public float m_rotForce = 10.0f;
     public float m_YForce = 5.0f;
@@ -50,7 +47,7 @@ public class GameMan : MonoBehaviour
     public JowProgressBar m_playerLifeBar;
     public TextMeshProUGUI m_playerInfoText;
 
-    GameObject m_MobA;
+    //GameObject m_MobA;
 
     private bool m_isUsingHands = false;
     private GameObject m_localPlayerHead;
@@ -60,7 +57,7 @@ public class GameMan : MonoBehaviour
     private float m_leftLastBulletTime = 0.0f;
     private float m_rightRPS = 1.0f; // Round per seconds (seconds between 2 shots)
     private float m_leftRPS = 1.0f; // Round per seconds (seconds between 2 shots)
-    int m_ammoCount = 100;
+    private bool m_doubleShot = false;
     public OVRCameraRig m_cameraRig;
 
     Material[] m_CubesElemMats = new Material[4];
@@ -87,6 +84,7 @@ public class GameMan : MonoBehaviour
 
         s_instance = this;
         DontDestroyOnLoad(gameObject);
+        Random.InitState(1966);
 
         if (s_log == null)
         {
@@ -121,10 +119,8 @@ public class GameMan : MonoBehaviour
         }
 
         LoadElementsMats();
-        LoadElementsCubes();
 
         m_wave = new WaveClass();
-        m_playerNb = 0;
     }
 
 
@@ -216,19 +212,19 @@ public class GameMan : MonoBehaviour
 
 
     // Instantiate a new element
-    void AddNewElement()
+    void AddNewElement(PillarMirror _pillar)
     {
         int count = m_elemCubes.Count;
         GameObject obj = GameObject.Instantiate(m_elementCubePrefab);
         obj.name = $"Elem_{count}";
-        Vector3 eyePos = m_cameraRig.transform.position;
-        Vector3 pos = eyePos + new Vector3(-0.5f, 1.0f + ((float)count * 0.2f), 0.2f);
+        Vector3 pos = _pillar.transform.position + new Vector3(-0.5f, 1.8f + ((float)count * 0.2f), 0.2f);
         obj.transform.SetPositionAndRotation(pos, Quaternion.identity);
 
         ElementsScript elem = obj.GetComponent<ElementsScript>();
         if (elem)
         {
-            int matId = count % 4;
+            //int matId = count % 4;
+            int matId = Random.Range(0, 4);
             elem.ChangeType((Elements)matId, m_CubesElemMats[matId]);
         }
 
@@ -245,54 +241,54 @@ public class GameMan : MonoBehaviour
     }
 
 
-    void LoadElementsCubes()
+    void LoadElementsCubes(PillarMirror pillar)
     {
         for (int i = 0; i < m_startElementCount; ++i)
         {
-            AddNewElement();
+            AddNewElement(pillar);
         }
     }
 
 
-    // Initialise the next wave to come
+    // Initialise the next wave to come (Server side only)
     public void InitNewWave()
     {
         m_waveNb++;
-        m_myAvatar.RpcWaveNb(m_waveNb);
-        m_nextWaveTime = 0.0f;
+        foreach (PlayerControlMirror plr in m_allPlayers)
+        {
+            plr.RpcWaveNb(m_waveNb);
+            plr.RpcNextWaveTime(0.0f);
+        }
+        //m_myAvatar.RpcWaveNb(m_waveNb);
+        //m_myAvatar.CmdEndOfWave(m_waveNb);
+        //m_myAvatar.RpcNextWaveTime(0.0f);
         m_wave.InitWave(m_waveNb);
         //m_logTitle.text = $"Mobs {m_wave.m_mobs.Count}";
 
-        m_playerLifeBar.m_maximum = 1000;
-        m_playerLifeBar.m_cur = 1000.0f;
-        m_ammoCount = 100;
-
-        Vector3 eyePos = m_cameraRig.transform.position;
+        // Add a new element for each wave
+        if ((m_waveNb > 1) && (m_elemCubes.Count < 4))
+        {
+            AddNewElement(m_myAvatar.m_myPillar);
+        }
 
         // Show and reposition elements
         int idx = 0;
         foreach (ElementsScript elem in m_elemCubes)
         {
-            Vector3 pos = eyePos + new Vector3(-0.5f, 1.0f + ((float)idx * 0.2f), 0.2f);
+            Vector3 pos = m_myAvatar.m_myPillar.transform.position + new Vector3(-0.5f, 2.0f + ((float)idx * 0.2f), 0.2f);
             elem.transform.SetPositionAndRotation(pos, Quaternion.identity);
 
             elem.gameObject.SetActive(true);
             idx++;
         }
 
-        // Add a new element for each wave
-        if (m_waveNb > 1)
-        {
-            AddNewElement();
-        }
-
         SetPlayerInfoText();
     }
 
 
-    void SetPlayerInfoText()
+    public void SetPlayerInfoText()
     {
-        m_playerInfoText.text = $"Wave {m_waveNb}\nAmmo {m_ammoCount} MobNb {m_wave.m_mobs.Count}";
+        m_playerInfoText.text = $"Wave {m_waveNb}\nAmmo {m_myAvatar.m_ammoCount} MobNb {m_wave.m_mobs.Count}";
     }
 
 
@@ -300,7 +296,7 @@ public class GameMan : MonoBehaviour
     public void RegisterNewPlayer(GameObject newPlayer, bool hasAuthority)
     {
         // Process some init here as we are sure the server is runing then
-        if (m_playerNb == 0)
+        if (m_allPlayers.Count == 0)
         {
             // Add few pillars for players seats (4?)
             GameObject pillarGo = GameObject.Find("PillarA");
@@ -310,26 +306,42 @@ public class GameMan : MonoBehaviour
         }
 
         PlayerControlMirror player = newPlayer.GetComponent<PlayerControlMirror>();
+        // Assign Pillars
+        PillarMirror pil = m_pillarsPool[m_allPlayers.Count].GetComponent<PillarMirror>();
+        player.m_myPillar = pil;
+
         if (hasAuthority)
         {
-            newPlayer.name = "MyAvatar"; // There is only one client which has the authority
-            m_avatar = newPlayer;
+            newPlayer.name = "MyAvatar" + player.netId; // There is only one client which has the authority (localClient)
             m_myAvatar = player;
 
-            // Assign Pillars
-            m_myPillar = m_pillarsPool[m_playerNb];
-
             // Set player pos and rot from pillars
-            Vector3 pos = m_myPillar.transform.position + new Vector3(0.0f, 1.8f, 0.0f);
-            Quaternion rot = m_myPillar.transform.rotation;
+            Vector3 pos = pil.transform.position + new Vector3(0.0f, 1.8f, 0.0f);
+            Quaternion rot = pil.transform.rotation;
             m_myAvatar.transform.SetPositionAndRotation(pos, rot);
             m_cameraRig.transform.SetPositionAndRotation(pos, rot);
+
+            LoadElementsCubes(m_myAvatar.m_myPillar);
         }
 
-        m_playerNb++;
-        JowLogger.Log($"---+++ Registering new player @ {Time.fixedTime}s, {newPlayer}, netId {player.netId}, m_playerNb {m_playerNb}");
-        JowLogger.Log($"on pillar {m_myPillar.name}");
-        player.RpcWaveNb(m_waveNb); // Send current wave nb
+        m_allPlayers.Add(player);
+        JowLogger.Log($"---+++ Registering new player @ {Time.fixedTime}s, {newPlayer}, netId {player.netId}, playerCount {m_allPlayers.Count}");
+        JowLogger.Log($"on pillar {player.m_myPillar.name}");
+
+        // JowNext: Add elements for each player
+
+
+        if (m_netMan.mode == NetworkManagerMode.Host)
+        {
+            player.RpcWaveNb(m_waveNb); // Send current wave nb
+        }
+    }
+
+
+    public void DisconnectPlayer(PlayerControlMirror player)
+    {
+        m_allPlayers.Remove(player);
+        JowLogger.Log($"DisconnectPlayer <-- netId {player.netId} @ {System.DateTime.Now} hasAuthority {player.hasAuthority} playerCount {m_allPlayers.Count}");
     }
 
 
@@ -349,10 +361,11 @@ public class GameMan : MonoBehaviour
     // Return this player pillar
     public GameObject GetPillar()
     {
-        return m_myPillar;
+        return m_myAvatar.m_myPillar.gameObject;
     }
 
 
+    // Server only
     public void MobIsDead(Mobs deadMob)
     {
         // A new mob is dead
@@ -386,7 +399,7 @@ public class GameMan : MonoBehaviour
     {
         JowLogger.Log($"{Time.fixedTime}s, All mobs of the wave {m_waveNb} are dead. GG ! ({m_wave.m_deathNb})");
         m_wave.FinishWave();
-        m_nextWaveTime = Time.fixedTime + 5.0f;
+        m_myAvatar.RpcNextWaveTime(Time.fixedTime + 5.0f);
 
         // Hide remaining elements
         foreach(ElementsScript elem in m_elemCubes)
@@ -400,16 +413,14 @@ public class GameMan : MonoBehaviour
     {
         if (m_curRotForce != 0.0f)
         {
-            PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-            player.transform.RotateAround(player.transform.position, Vector3.up, m_curRotForce * Time.fixedDeltaTime);
+            m_myAvatar.transform.RotateAround(m_myAvatar.transform.position, Vector3.up, m_curRotForce * Time.fixedDeltaTime);
         }
 
         if (m_curYForce != 0.0f)
         {
-            PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-            Vector3 pos = player.transform.position;
+            Vector3 pos = m_myAvatar.transform.position;
             pos += Vector3.up * m_curYForce * Time.fixedDeltaTime;
-            player.transform.SetPositionAndRotation(pos, player.transform.rotation);
+            m_myAvatar.transform.SetPositionAndRotation(pos, m_myAvatar.transform.rotation);
         }
 
         //---
@@ -428,14 +439,19 @@ public class GameMan : MonoBehaviour
         if (m_myAvatar == null)
             return;
 
+        if (m_nextWaveTime > 0.0f)
+        {
+            m_playerInfoText.text = $"Next Wave in {(m_nextWaveTime - Time.fixedTime).ToString("f1")}s";
+        }
+        
         if (m_myAvatar.isServer == false)
             return;
 
         // Launch Next Phase
         if (m_nextWaveTime > 0.0f)
         {
-            string t = $"Next Wave in {(m_nextWaveTime - Time.fixedTime).ToString("f1")}s";
-            m_playerInfoText.text = t;
+            //string t = $"Next Wave in {(m_nextWaveTime - Time.fixedTime).ToString("f1")}s";
+            //m_playerInfoText.text = t;
 
             if (Time.fixedTime > m_nextWaveTime)
             {
@@ -466,7 +482,11 @@ public class GameMan : MonoBehaviour
             }
         }
 
-        float hitAmount = 0.0f;
+        // Reset all damage taken last frame
+        foreach (PlayerControlMirror plr in m_allPlayers)
+        {
+            plr.m_curHitAmount = 0.0f;
+        }
         // Handle mobs mouvements
         if (m_wave.m_mobs.Count > 0)
         {
@@ -479,22 +499,33 @@ public class GameMan : MonoBehaviour
                     continue;
 
                 Vector3 forward = mob.transform.forward * Time.fixedDeltaTime;
-                float dist = (mob.transform.position - m_myPillar.transform.position).magnitude;
+                float dist = (mob.transform.position - m_myAvatar.m_myPillar.transform.position).magnitude;
 
                 if (dist > 3.0f)
                 {
                     mob.transform.position += forward * mob.m_curSpeedFactor;
                 }
 
-                float t = 1.0f - Mathf.InverseLerp(0.0f, 5.0f, mob.transform.position.z);
-                hitAmount += t * 100.0f;
+                //float t = 1.0f - Mathf.InverseLerp(0.0f, 5.0f, mob.transform.position.z);
+                //hitAmount += t * 100.0f;
+
+                // Compute hit amount for each player
+                foreach (PlayerControlMirror plr in m_allPlayers)
+                {
+                    float d = (mob.transform.position - plr.m_myPillar.transform.position).magnitude;
+                    float h = 1.0f - Mathf.InverseLerp(0.0f, 5.0f, d);
+                    plr.m_curHitAmount += h * 100.0f;
+                }
             }
         }
 
-        if (hitAmount > 0.0f)
+        // Apply current frame cumulated damages
+        foreach (PlayerControlMirror plr in m_allPlayers)
         {
-            float life = m_playerLifeBar.m_cur - hitAmount * Time.fixedDeltaTime;
-            m_playerLifeBar.m_cur = life;
+            if (plr.m_curHitAmount > 0.0f)
+            {
+                plr.m_curLife = plr.m_curLife - plr.m_curHitAmount * Time.fixedDeltaTime;
+            }
         }
 
         //TestRotatingElem();
@@ -508,9 +539,61 @@ public class GameMan : MonoBehaviour
             return false;
         if (m_nextWaveTime > 0.0f) // Cannot fire between waves
             return false;
-        if (m_ammoCount <= 0)
+        if (m_myAvatar.m_ammoCount <= 0)
             return false;
         return true;
+    }
+
+
+    // Try to fire from right or left hand
+    public bool TryFire(bool isRight, Vector3 pos, Quaternion ori, Vector3 right)
+    {
+        if (isRight)
+        {
+            if (Time.time > m_rightLastBulletTime + m_rightRPS)
+            {
+                m_rightLastBulletTime = Time.time;
+
+                if (m_doubleShot)
+                {
+                    Vector3 p = pos + right * 0.1f;
+                    m_myAvatar.SpawnMyTool(p, ori);
+                    p = pos - right * 0.1f;
+                    m_myAvatar.SpawnMyTool(p, ori);
+                }
+                else
+                {
+                    m_myAvatar.SpawnMyTool(pos, ori);
+                }
+
+                SetPlayerInfoText();
+                return true;
+            }
+        }
+        else
+        {
+            if (Time.time > m_leftLastBulletTime + m_leftRPS)
+            {
+                m_leftLastBulletTime = Time.time;
+
+                if (m_doubleShot)
+                {
+                    Vector3 p = pos + right * 0.1f;
+                    m_myAvatar.SpawnMyTool(p, ori);
+                    p = pos - right * 0.1f;
+                    m_myAvatar.SpawnMyTool(p, ori);
+                }
+                else
+                {
+                    m_myAvatar.SpawnMyTool(pos, ori);
+                }
+
+                SetPlayerInfoText();
+                return true;
+            }
+        }
+
+        return false;
     }
 
 
@@ -546,7 +629,7 @@ public class GameMan : MonoBehaviour
     {
         //m_logTitle.text = $"{Time.fixedTime}s\n{m_netMan.networkAddress}\n{m_lastConnected}s"; // Put back
 
-        if (m_avatar)
+        if (m_myAvatar)
         {
             string mobLife = "-";
             if (m_wave.m_mobs.Count > 0)
@@ -584,9 +667,12 @@ public class GameMan : MonoBehaviour
                 {
                     if (m_netMan.mode == NetworkManagerMode.Host)
                     {
-                        Vector3 pos = m_myPillar.transform.position;
-                        pos.y += 0.1f * Time.deltaTime;
-                        m_myPillar.transform.position = pos;
+                        foreach (GameObject go in m_pillarsPool)
+                        {
+                            Vector3 pos = go.transform.position;
+                            pos.y += 0.1f * Time.deltaTime;
+                            go.transform.position = pos;
+                        }
                     }
 
                     /*
@@ -594,7 +680,7 @@ public class GameMan : MonoBehaviour
                     pos.y += 0.1f * Time.deltaTime;
                     m_cameraRig.transform.position = pos;
                     */
-                    m_cameraRig.transform.position = m_myPillar.transform.position + new Vector3(0.0f, 1.8f, 0.0f);
+                    m_cameraRig.transform.position = m_myAvatar.m_myPillar.transform.position + new Vector3(0.0f, 1.8f, 0.0f);
                 }
             }
         }
@@ -616,30 +702,27 @@ public class GameMan : MonoBehaviour
             }
             */
 
-            if (m_avatar != null)
+            if (m_myAvatar != null)
             {
-                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-                player.Jump();
+                m_myAvatar.Jump();
             }
         }
 
         if (Input.GetKeyUp(KeyCode.C))
         {
-            if (m_avatar != null)
+            if (m_myAvatar != null)
             {
-                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-                player.ChangeAvatarColour();
+                m_myAvatar.ChangeAvatarColour();
             }
         }
 
         // Place player at pos
         if (Input.GetKeyUp(KeyCode.P))
         {
-            if (m_avatar != null)
+            if (m_myAvatar != null)
             {
-                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
                 //player.PositionPlayer(new Vector3(0.1f, 1.0f, 1.8f));
-                player.transform.SetPositionAndRotation(new Vector3(0.1f, 1.0f, 1.8f), Quaternion.identity);
+                m_myAvatar.transform.SetPositionAndRotation(new Vector3(0.1f, 1.0f, 1.8f), Quaternion.identity);
             }
             else
             {
@@ -650,36 +733,28 @@ public class GameMan : MonoBehaviour
         // Spawn unsync entity
         if (Input.GetKeyUp(KeyCode.R))
         {
-            //*
-            if (m_avatar != null)
+            if (m_myAvatar != null)
             {
                 if (CanFire() == true)
                 {
-                    if (Time.time > m_leftLastBulletTime + m_leftRPS)
-                    {
-                        m_leftLastBulletTime = Time.time;
-                        PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-                        //Quaternion q = Quaternion.LookRotation(player.transform.forward);
-                        Quaternion q = player.transform.rotation;
-                        Vector3 p = player.transform.position + player.transform.forward * 0.2f; // Spawn in front to avoid collisions
-                        player.SpawnMyTool(p, q);
-                        m_ammoCount--;
-                        SetPlayerInfoText();
-
-                        //AudioSource.PlayClipAtPoint(m_audioSounds[0], m_cameraRig.trackingSpace.position);
-                    }
+                    Vector3 p = m_myAvatar.transform.position + m_myAvatar.transform.forward * 0.2f; // Spawn in front to avoid collisions
+                    Quaternion q = m_myAvatar.transform.rotation;
+                    TryFire(true, p, q, m_myAvatar.transform.right);
                 }
             }
-            //*/
         }
 
-        // Activate an element
+        // Activate first unused element
         if (Input.GetKeyUp(KeyCode.L))
         {
-            if (m_elemCubes.Count > 0)
+            foreach (ElementsScript elem in m_elemCubes)
             {
-                m_elemCubes[0].GetColorGrabbable().m_lastGrabbed = Time.time;
-                m_elemCubes[0].transform.position = m_cameraRig.transform.position + Vector3.up * 2.0f;
+                if (elem.m_used == false)
+                {
+                    elem.GetColorGrabbable().m_lastGrabbed = Time.time;
+                    elem.transform.position = m_cameraRig.transform.position + Vector3.up * 2.0f;
+                    break;
+                }
             }
         }
 
@@ -694,12 +769,10 @@ public class GameMan : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.T))
         {
             //*
-            if (m_avatar != null)
+            if (m_myAvatar != null)
             {
-                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-
                 // Check if already there
-                if (player.m_tool == null)
+                if (m_myAvatar.m_tool == null)
                 {
                     GameObject go = GameObject.Find("AvatarTool2");
                     Tools2Mirror tool = null;
@@ -709,11 +782,11 @@ public class GameMan : MonoBehaviour
                     }
                     if (tool != null)
                     {
-                        player.m_tool = tool;
+                        m_myAvatar.m_tool = tool;
                     }
                     else
                     {
-                        player.SpawnMyTool2();
+                        m_myAvatar.SpawnMyTool2();
 
                         // Assign player tool2 by name
                         /*
@@ -730,40 +803,36 @@ public class GameMan : MonoBehaviour
 
         if (Input.GetKey(KeyCode.Keypad6))
         {
-            if (m_avatar != null)
+            if (m_myAvatar != null)
             {
-                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-                player.m_tool.transform.RotateAround(player.m_tool.transform.position, Vector3.up, 100.0f * Time.deltaTime);
+                m_myAvatar.m_tool.transform.RotateAround(m_myAvatar.m_tool.transform.position, Vector3.up, 100.0f * Time.deltaTime);
             }
         }
         if (Input.GetKey(KeyCode.Keypad4))
         {
-            if (m_avatar != null)
+            if (m_myAvatar != null)
             {
-                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-                player.m_tool.transform.RotateAround(player.m_tool.transform.position, Vector3.up, -100.0f * Time.deltaTime);
+                m_myAvatar.m_tool.transform.RotateAround(m_myAvatar.m_tool.transform.position, Vector3.up, -100.0f * Time.deltaTime);
             }
         }
         if (Input.GetKey(KeyCode.Keypad9))
         {
-            if (m_avatar != null)
+            if (m_myAvatar != null)
             {
-                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-                Vector3 pos = player.m_tool.transform.position;
+                Vector3 pos = m_myAvatar.m_tool.transform.position;
                 pos += Vector3.up * 1.0f * Time.deltaTime;
-                Quaternion q = player.m_tool.transform.rotation;
-                player.m_tool.transform.SetPositionAndRotation(pos, q);
+                Quaternion q = m_myAvatar.m_tool.transform.rotation;
+                m_myAvatar.m_tool.transform.SetPositionAndRotation(pos, q);
             }
         }
         if (Input.GetKey(KeyCode.Keypad7))
         {
-            if (m_avatar != null)
+            if (m_myAvatar != null)
             {
-                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-                Vector3 pos = player.m_tool.transform.position;
+                Vector3 pos = m_myAvatar.m_tool.transform.position;
                 pos -= Vector3.up * 1.0f * Time.deltaTime;
-                Quaternion q = player.m_tool.transform.rotation;
-                player.m_tool.transform.SetPositionAndRotation(pos, q);
+                Quaternion q = m_myAvatar.m_tool.transform.rotation;
+                m_myAvatar.m_tool.transform.SetPositionAndRotation(pos, q);
             }
         }
         if (Input.GetKey(KeyCode.Keypad8))
@@ -782,13 +851,12 @@ public class GameMan : MonoBehaviour
         }
         if (Input.GetKey(KeyCode.Keypad5))
         {
-            if (m_avatar != null)
+            if (m_myAvatar != null)
             {
-                PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-                Vector3 pos = player.m_tool.transform.position;
-                pos += player.m_tool.transform.up * -0.8f * Time.deltaTime;
-                Quaternion q = player.m_tool.transform.rotation;
-                player.m_tool.transform.SetPositionAndRotation(pos, q);
+                Vector3 pos = m_myAvatar.m_tool.transform.position;
+                pos += m_myAvatar.m_tool.transform.up * -0.8f * Time.deltaTime;
+                Quaternion q = m_myAvatar.m_tool.transform.rotation;
+                m_myAvatar.m_tool.transform.SetPositionAndRotation(pos, q);
             }
         }
         if (Input.GetKeyUp(KeyCode.Keypad3))
@@ -850,8 +918,7 @@ public class GameMan : MonoBehaviour
         {
             //float pinchStrength = m_leftHand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
             //m_logTitle.text = $"pinchStrength = {pinchStrength}";
-            PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
-            Transform trs = player.transform;
+            Transform trs = m_myAvatar.transform;
             if (m_isUsingHands)
             {
                 trs = m_leftHand.transform;
@@ -859,21 +926,14 @@ public class GameMan : MonoBehaviour
 
             if (CanFire() == true)
             {
-                if (Time.time > m_leftLastBulletTime + m_leftRPS)
-                {
-                    m_leftLastBulletTime = Time.time;
-                    Quaternion q = Quaternion.LookRotation(m_leftHand.transform.right);
-                    player.SpawnMyTool(trs.position, q);
-                    m_ammoCount--;
-                    SetPlayerInfoText();
-                }
+                Quaternion q = Quaternion.LookRotation(m_leftHand.transform.right);
+                TryFire(false, trs.position, q, m_leftHand.transform.forward);
             }
         }
         if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
         {
             //float pinchStrength = m_rightHand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
             //m_logTitle.text = $"pinchStrength = {pinchStrength}";
-            PlayerControlMirror player = m_avatar.GetComponent<PlayerControlMirror>();
             if (m_isUsingHands == false)
             {
                 m_isUsingHands = true;
@@ -882,14 +942,8 @@ public class GameMan : MonoBehaviour
 
             if (CanFire() == true)
             {
-                if (Time.time > m_rightLastBulletTime + m_rightRPS)
-                {
-                    m_rightLastBulletTime = Time.time;
-                    Quaternion q = Quaternion.LookRotation(-m_rightHand.transform.right);
-                    player.SpawnMyTool(trs.position, q);
-                    m_ammoCount--;
-                    SetPlayerInfoText();
-                }
+                Quaternion q = Quaternion.LookRotation(-m_rightHand.transform.right);
+                TryFire(true, trs.position, q, m_rightHand.transform.forward);
             }
         }
 
@@ -920,11 +974,40 @@ public class GameMan : MonoBehaviour
     // elem just has been triggered
     public void TriggerElement(ElementsScript elem)
     {
+        JowLogger.Log($"Triggering element {elem.m_elemType}");
         AudioSource.PlayClipAtPoint(m_audioSounds[1], elem.transform.position);
-        m_rightRPS = 0.2f;
-        m_leftRPS = 0.2f;
 
-        StartCoroutine(RestoreRPS(8.0f, true, true, 1.0f));
+        switch (elem.m_elemType)
+        {
+            case Elements.Earth:
+                {
+                    m_rightRPS = 0.2f;
+                    m_leftRPS = 0.2f;
+                    StartCoroutine(RestoreRPS(8.0f, true, true, 1.0f));
+                    break;
+                }
+            case Elements.Water:
+                {
+                    m_doubleShot = true;
+                    StartCoroutine(SetDoubleShotD(6.0f, false));
+                    break;
+                }
+            case Elements.Fire:
+                {
+                    m_rightRPS = 0.2f;
+                    m_leftRPS = 0.2f;
+                    StartCoroutine(RestoreRPS(8.0f, true, true, 1.0f));
+                    break;
+                }
+            case Elements.Air:
+                {
+                    m_rightRPS = 0.2f;
+                    m_leftRPS = 0.2f;
+                    StartCoroutine(RestoreRPS(8.0f, true, true, 1.0f));
+                    break;
+                }
+        }
+
         StartCoroutine(DestroyElementDelayed(5.0f, elem));
     }
 
@@ -942,6 +1025,15 @@ public class GameMan : MonoBehaviour
         {
             m_leftRPS = newVal;
         }
+    }
+
+
+    // Set double shot state after waitSec seconds
+    public IEnumerator SetDoubleShotD(float waitSec, bool state)
+    {
+        yield return new WaitForSeconds(waitSec);
+
+        m_doubleShot = state;
     }
 
 

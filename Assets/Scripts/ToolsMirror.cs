@@ -38,6 +38,7 @@ public class ToolsMirror : NetworkBehaviour
         }
 
         m_spawnTime = Time.fixedTime;
+        AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[0], transform.position);
 
         // This object transform isn't synchronized, add force client side
         Rigidbody rb = GetComponent<Rigidbody>();

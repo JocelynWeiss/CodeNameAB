@@ -6,6 +6,7 @@ using OculusSampleFramework;
 public class ElementsScript : MonoBehaviour
 {
     public Elements m_elemType = Elements.Air;
+    public bool m_used = false;
 
     ColorGrabbable m_grabbable;
 
@@ -30,6 +31,8 @@ public class ElementsScript : MonoBehaviour
             }
         }
         */
+
+        m_used = false;
     }
 
 
@@ -73,7 +76,7 @@ public class ElementsScript : MonoBehaviour
         if (dist > 1.0f)
         {
             GameMan.s_instance.TriggerElement(this);
-            //AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[1], transform.position);
+            m_used = true;
 
             StartCoroutine(DelayedFall(3.0f));
         }

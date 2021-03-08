@@ -169,7 +169,7 @@ public class WaveClass
         }
 
         // Add medics
-        //*
+        /*
         AddMedicMob();
         AddMedicMob();
         AddMedicMob();

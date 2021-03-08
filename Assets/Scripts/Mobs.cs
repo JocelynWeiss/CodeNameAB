@@ -28,22 +28,22 @@ public class Mobs : NetworkBehaviour
         switch (m_mobType)
         {
             case MobsType.MobA:
-                m_name = "MobA";
+                m_name = "MobA" + netId;
                 // Most simple mob with only one life part
                 //m_speedFactor = 0.15f;
                 break;
             case MobsType.MobB:
-                m_name = "MobB";
+                m_name = "MobB" + netId;
                 //m_life = 100.0f;
                 //m_armor = 20.0f;
                 //m_speedFactor = 0.1f;
                 break;
             case MobsType.MobC:
-                m_name = "MobC";
+                m_name = "MobC" + netId;
                 //m_speedFactor = 0.25f;
                 break;
             case MobsType.MobMedic:
-                m_name = "MobMedic";
+                m_name = "MobMedic" + netId;
                 //m_life = 8.0f;
 
                 if (m_parts.Count > 0)
@@ -69,6 +69,18 @@ public class Mobs : NetworkBehaviour
     public override void OnStartClient()
     {
         JowLogger.Log($"{Time.fixedTime}s OnStartClient---");
+        if (m_mobType != MobsType.MobMedic)
+        {
+            AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[3], transform.position);
+        }
+    }
+
+
+    public override void OnStopClient()
+    {
+        JowLogger.Log($"OnStopClient --- {gameObject} --- netId {netId}");
+        AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[2], transform.position);
+        base.OnStopClient();
     }
 
 
@@ -108,6 +120,7 @@ public class Mobs : NetworkBehaviour
                 JowLogger.Log($"{Time.fixedTime}s Mob is DEAD !");
                 gameObject.SetActive(false);
                 GameMan.s_instance.MobIsDead(this);
+                UnspawnSelf();
             }
         }
 
@@ -120,6 +133,7 @@ public class Mobs : NetworkBehaviour
                 JowLogger.Log($"{Time.fixedTime}s Mob is DEAD ! main part destroyed");
                 gameObject.SetActive(false);
                 GameMan.s_instance.MobIsDead(this);
+                UnspawnSelf();
             }
         }
     }
@@ -170,7 +184,8 @@ public class Mobs : NetworkBehaviour
     // Called on clients whenever the server is updating
     private void SetMobLife(float oldVal, float newVal)
     {
-        JowLogger.Log($"{Time.fixedTime}s Updating mob {name} life from {oldVal} to {newVal} now {m_life}");
+        //JowLogger.Log($"Updating {name}.{netId} life from {oldVal} to {newVal} now {m_life}");
+        AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[5], transform.position);
     }
 
 
@@ -225,5 +240,19 @@ public class Mobs : NetworkBehaviour
         {
             JowLogger.Log($"{Time.fixedTime}s CAN'T detroy mob part {partName} from {name}");
         }
+    }
+
+
+    // destroy for everyone on the server
+    [Server] void DestroySelf()
+    {
+        NetworkServer.Destroy(gameObject);
+    }
+
+
+    // unspawn for everyone on the server
+    [Server] void UnspawnSelf()
+    {
+        NetworkServer.UnSpawn(gameObject);
     }
 }

@@ -1047,8 +1047,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 858b9657bb8bdde4dbec0928b5760a25, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_logTitle: {fileID: 0}
   m_netMan: {fileID: 313177742}
-  m_playerNb: 0
+  m_allPlayers: []
   m_upForce: 300
   m_rotForce: 100
   m_YForce: 5
@@ -1063,6 +1064,10 @@ MonoBehaviour:
   m_audioSounds:
   - {fileID: 8300000, guid: 47aa5d5fc0657584aa9db9db5d029d84, type: 3}
   - {fileID: 8300000, guid: d3994560fb567c34a821fd9355c10eef, type: 3}
+  - {fileID: 8300000, guid: 97b83d250d587e24c926b4b81b70cae4, type: 3}
+  - {fileID: 8300000, guid: 5118a9e0edbe06b4087d99157028d98b, type: 3}
+  - {fileID: 8300000, guid: d69debb483e26b2449ac8c1dc0b7c4f3, type: 3}
+  - {fileID: 8300000, guid: 6940e836586bac2438fec0b2cc8a95ce, type: 3}
 --- !u!4 &1120326616
 Transform:
   m_ObjectHideFlags: 0

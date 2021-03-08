@@ -70,6 +70,7 @@ public class MobPart : MonoBehaviour
         if (NetworkManager.singleton.mode == NetworkManagerMode.Host)
         {
             TakeDamage(bullet.m_damageLife, bullet.m_damageArmour);
+            //AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[5], transform.position);
 
             // If no armour and no life, the part is destroyed
             bool sendToClient = false;

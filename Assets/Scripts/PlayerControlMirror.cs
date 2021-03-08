@@ -20,6 +20,12 @@ public class PlayerControlMirror : NetworkBehaviour
     Renderer m_renderer;
     [HideInInspector] public Rigidbody m_rb;
 
+    public int m_ammoCount = 100;
+    [SyncVar(hook = nameof(SetAvatarLife))] public float m_curLife = 1000.0f;
+    public float m_curHitAmount = 0.0f; // cumulated hits taken in current frame
+
+    public PillarMirror m_myPillar;
+
 
     public override void OnStartClient()
     {
@@ -48,7 +54,7 @@ public class PlayerControlMirror : NetworkBehaviour
         uint netid = GetComponent<NetworkIdentity>().netId;
         //transform.SetPositionAndRotation(new Vector3(0.0f + n, 2.0f, 1.0f), Quaternion.identity);
         Quaternion q = Quaternion.identity;
-        transform.SetPositionAndRotation(new Vector3(1.0f + GameMan.s_instance.m_playerNb, 2.0f, 1.0f), q);
+        transform.SetPositionAndRotation(new Vector3(1.0f + GameMan.s_instance.m_allPlayers.Count, 2.0f, 1.0f), q);
 
         JowLogger.Log($"Creating client {n} --->netId {netid}: {this} OnStartClient @ {Time.fixedTime}s hasAuthority {hasAuthority}");
         JowLogger.Log($"{transform.position}");
@@ -82,10 +88,19 @@ public class PlayerControlMirror : NetworkBehaviour
         }
         else
         {
-            JowLogger.Log($"+++ {this} NetId= {netId} Start @ {Time.fixedTime}s numPlayers {NetworkManager.singleton.numPlayers} over gameMan playerNb {GameMan.s_instance.m_playerNb}");
+            JowLogger.Log($"+++ {this} NetId= {netId} Start @ {Time.fixedTime}s numPlayers {NetworkManager.singleton.numPlayers} over gameMan playerNb {GameMan.s_instance.m_allPlayers.Count}");
         }
 
         //transform.SetPositionAndRotation(new Vector3(1.0f, 1.0f, 1.0f), Quaternion.identity);
+    }
+
+
+    public override void OnStopClient()
+    {
+        //JowLogger.Log($"OnStopClient <-- netId {netId} @ {System.DateTime.Now} hasAuthority {hasAuthority}");
+        base.OnStopClient();
+
+        GameMan.s_instance.DisconnectPlayer(this);
     }
 
 
@@ -102,6 +117,16 @@ public class PlayerControlMirror : NetworkBehaviour
         m_renderer.material.color = m_syncColor;
         //m_renderer.material.color = newColor;
         //JowLogger.Log($"MMMMMMMMMMMMMMM Setting color from {oldColor} to {newColor} @ {Time.fixedTime}s m_syncColor {m_syncColor}");
+    }
+
+
+    // private function that is called when server is synching life
+    void SetAvatarLife(float oldLife, float newLife)
+    {
+        if (hasAuthority) // if we are the local player only
+        {
+            GameMan.s_instance.m_playerLifeBar.m_cur = m_curLife;
+        }
     }
 
 
@@ -169,8 +194,8 @@ public class PlayerControlMirror : NetworkBehaviour
     // Spawn an object which is then client controled (by physics)
     public void SpawnMyTool(Vector3 pos, Quaternion rot)
     {
+        m_ammoCount--;
         CmdSpawnTool(m_syncColor, pos, rot);
-        AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[0], pos);
     }
 
 
@@ -270,11 +295,38 @@ public class PlayerControlMirror : NetworkBehaviour
     }
 
 
+    [Command] public void CmdEndOfWave(int newWaveNb)
+    {
+        JowLogger.Log($"CmdEndOfWave from netId {netId}, newWaveNb = {newWaveNb}");
+        RpcWaveNb(newWaveNb);
+    }
+
+
     // Update wave nb on the client (execute on the host as well of course)
     [ClientRpc]
     public void RpcWaveNb(int newWaveNb)
     {
-        JowLogger.Log($"newWaveNb = {newWaveNb}");
+        JowLogger.Log($"netId {netId}, newWaveNb = {newWaveNb}");
         GameMan.s_instance.m_waveNb = newWaveNb;
+        m_ammoCount = 100;
+        m_curLife = 1000.0f;
+        GameMan.s_instance.m_playerLifeBar.m_maximum = (int)m_curLife;
+        GameMan.s_instance.m_playerLifeBar.m_cur = m_curLife;
+        GameMan.s_instance.SetPlayerInfoText();
+        GameMan.s_instance.m_logTitle.text = "";
+    }
+
+
+    // Client side to update next wave time
+    [ClientRpc]
+    public void RpcNextWaveTime(float _nextTime)
+    {
+        JowLogger.Log($"Next wave @ {_nextTime}s");
+        GameMan.s_instance.m_nextWaveTime = _nextTime;
+
+        if (_nextTime > 0.0f)
+        {
+            AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[4], transform.position);
+        }
     }
 }
