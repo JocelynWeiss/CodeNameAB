@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using OculusSampleFramework;
+using Mirror;
 
-public class ElementsScript : MonoBehaviour
+public class ElementsNet : NetworkBehaviour
 {
-    public Elements m_elemType = Elements.Air;
+    [SyncVar] public Elements m_elemType = Elements.Air;
+    [SyncVar] public uint m_ownerId;
     public bool m_used = false;
 
     ColorGrabbable m_grabbable;
@@ -17,29 +19,31 @@ public class ElementsScript : MonoBehaviour
     }
 
 
-    private void Awake()
+    public override void OnStartClient()
     {
-        m_grabbable = GetComponent<ColorGrabbable>();
-        /*
-        if (m_grabbable == null)
-        {
-            JowLogger.Log($"Getting grabbable from parent...");
-            m_grabbable = transform.parent.GetComponent<ColorGrabbable>();
-            if (m_grabbable == null)
-            {
-                Debug.LogError($"Cannot get the grabbable");
-            }
-        }
-        */
-
-        m_used = false;
+        //GameMan.s_instance.RegisterNewTool2(this, hasAuthority);
     }
 
 
-    // Start is called before the first frame update
+    public override void OnStartServer()
+    {
+        //JowLogger.Log($"{gameObject} OnStartServer @ {Time.fixedTime}s.");
+    }
+
+
+    // Start is called before the first frame update but after OnStartXXX
     void Start()
     {
-        JowLogger.Log($"ElementsScript {name} {m_elemType} Start @ {Time.fixedTime}s");
+        m_grabbable = GetComponent<ColorGrabbable>();
+        m_used = false;
+        //JowLogger.Log($"ElementsNet Start ++++++++++ {m_elemType}, netId {netId}, hasAuthority {hasAuthority}, avatarAuthority {GameMan.s_instance.GetLocalPlayer().hasAuthority}");
+        ChangeType(m_elemType, GameMan.s_instance.m_CubesElemMats[(int)m_elemType]);
+        PlayerControlMirror localPlr = GameMan.s_instance.GetLocalPlayer();
+        if (localPlr.netId == m_ownerId)
+        {
+            localPlr.m_myElems.Add(this);
+            JowLogger.Log($"\t ++++++++++ Add elem to player {localPlr.name}, count {localPlr.m_myElems.Count}");
+        }
     }
 
 
@@ -70,12 +74,11 @@ public class ElementsScript : MonoBehaviour
     public void TriggerElement()
     {
         Vector3 eyePos = GameMan.s_instance.m_cameraRig.transform.position;
-        //float dist = Vector3.Distance(eyePos, transform.position);
         float dist = transform.position.y - eyePos.y;
 
         if (dist > 1.0f)
         {
-            //GameMan.s_instance.TriggerElement(this); // Deprecated
+            GameMan.s_instance.TriggerElement(this);
             m_used = true;
 
             StartCoroutine(DelayedFall(3.0f));

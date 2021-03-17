@@ -7,7 +7,7 @@ using OculusSampleFramework;
 
 
 // A game manager dedicated to test mirror networking services...
-//JowNext: Sync Pillars... Add a game over if no more life
+//JowNext: Add a game over if no more life
 // Sync end of wave to elevate client pillars, use RPC in PlayerControlMirror
 
 
@@ -30,6 +30,8 @@ public class GameMan : MonoBehaviour
     public TextMeshProUGUI m_logTitle;
 
     public NetworkManager m_netMan;
+    public int m_minPlayerNb = 2; // Minimum player number required to launch first wave
+    public float m_firstWaveDelay = 10.0f; // seconds before launching first wave
 
     public List<PlayerControlMirror> m_allPlayers = new List<PlayerControlMirror>();
     private float m_lastConnected = 0.0f;
@@ -42,12 +44,10 @@ public class GameMan : MonoBehaviour
     private float m_curYForce = 0.0f;
     private bool m_tryingConnectAsClient = false;
     public int m_waveNb = 0;
-    public float m_nextWaveTime = 0.0f;
+    public double m_nextWaveDate = 0.0; // Date as an AODate
     public WaveClass m_wave; // The current mobs wave
     public JowProgressBar m_playerLifeBar;
     public TextMeshProUGUI m_playerInfoText;
-
-    //GameObject m_MobA;
 
     private bool m_isUsingHands = false;
     private GameObject m_localPlayerHead;
@@ -140,6 +140,12 @@ public class GameMan : MonoBehaviour
     }
 
 
+    public PlayerControlMirror GetLocalPlayer()
+    {
+        return m_myAvatar;
+    }
+
+
     public GameObject GetClosestPillar(Vector3 _pos)
     {
         GameObject ret = null;
@@ -211,10 +217,10 @@ public class GameMan : MonoBehaviour
     }
 
 
-    // Instantiate a new element
+    // Instantiate a new element (DEPRECATED)
     void AddNewElement(PillarMirror _pillar)
     {
-        return;
+        /*
         int count = m_elemCubes.Count;
         GameObject obj = GameObject.Instantiate(m_elementCubePrefab);
         obj.name = $"Elem_{count}";
@@ -230,6 +236,7 @@ public class GameMan : MonoBehaviour
         }
 
         m_elemCubes.Add(elem);
+        */
 
         /*
         ColorGrabbable cg = obj.GetComponent<ColorGrabbable>();
@@ -258,7 +265,7 @@ public class GameMan : MonoBehaviour
         foreach (PlayerControlMirror plr in m_allPlayers)
         {
             plr.RpcWaveNb(m_waveNb);
-            plr.RpcNextWaveTime(0.0f);
+            plr.RpcNextWaveTime(0.0);
         }
         //m_myAvatar.RpcWaveNb(m_waveNb);
         //m_myAvatar.CmdEndOfWave(m_waveNb);
@@ -398,9 +405,11 @@ public class GameMan : MonoBehaviour
     // End of a wave (no mobs left)
     void WaveEnded()
     {
-        JowLogger.Log($"{Time.fixedTime}s, All mobs of the wave {m_waveNb} are dead. GG ! ({m_wave.m_deathNb})");
+        System.DateTime toto = System.DateTime.Now.AddSeconds(5.0);
+        double date = toto.ToOADate();
+        JowLogger.Log($"{Time.fixedTime}s, All mobs of the wave {m_waveNb} are dead. GG ! ({m_wave.m_deathNb}) ------------------ {toto} = {date}");
         m_wave.FinishWave();
-        m_myAvatar.RpcNextWaveTime(Time.fixedTime + 5.0f);
+        m_myAvatar.RpcNextWaveTime(date);
 
         // Hide remaining elements
         foreach(ElementsScript elem in m_elemCubes)
@@ -440,46 +449,41 @@ public class GameMan : MonoBehaviour
         if (m_myAvatar == null)
             return;
 
-        if (m_nextWaveTime > 0.0f)
+        if (m_nextWaveDate > System.DateTime.Now.ToOADate())
         {
-            m_playerInfoText.text = $"Next Wave in {(m_nextWaveTime - Time.fixedTime).ToString("f1")}s";
+            double d = m_nextWaveDate - System.DateTime.Now.ToOADate();
+            d *= 100000.0;
+            m_playerInfoText.text = $"Next Wave in {d.ToString("f0")}s";
         }
-        
+
+#if UNITY_ANDROID
+        // Update local player head position from headset
+        if (m_myAvatar.isLocalPlayer)
+        {
+            m_myAvatar.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
+        }
+#endif
+
         if (m_myAvatar.isServer == false)
             return;
 
         // Launch Next Phase
-        if (m_nextWaveTime > 0.0f)
+        if (m_nextWaveDate > 0.0)
         {
             //string t = $"Next Wave in {(m_nextWaveTime - Time.fixedTime).ToString("f1")}s";
             //m_playerInfoText.text = t;
 
-            if (Time.fixedTime > m_nextWaveTime)
+            if (System.DateTime.Now.ToOADate() >= m_nextWaveDate)
             {
-                //m_logTitle.text = $"Pount {m_pillarsPool.Count}";
                 InitNewWave();
-                /*
-                if (m_MobA)
-                {
-                    m_nextWaveTime = 0.0f;
-                    Vector3 spawnPoint = new Vector3(1.0f, 1.5f, 1.7f);
-                    m_MobA.transform.position = spawnPoint;
-                    m_MobA.SetActive(true);
-                    m_waveNb = 1;
-                }
-                else
-                {
-                    m_MobA = GameObject.Find("MobA");
-                }
-                */
             }
         }
         else
         {
-            // Launch Phase 1
-            if (m_waveNb == 0)
+            // Launch Phase 1 if enough player
+            if ((m_waveNb == 0) && (m_allPlayers.Count >= m_minPlayerNb))
             {
-                m_nextWaveTime = Time.fixedTime + 5.0f;
+                m_nextWaveDate = System.DateTime.Now.AddSeconds(m_firstWaveDelay).ToOADate();
             }
         }
 
@@ -502,7 +506,7 @@ public class GameMan : MonoBehaviour
                 Vector3 forward = mob.transform.forward * Time.fixedDeltaTime;
                 float dist = (mob.transform.position - m_myAvatar.m_myPillar.transform.position).magnitude;
 
-                if (dist > 3.0f)
+                if (dist > 4.0f)
                 {
                     mob.transform.position += forward * mob.m_curSpeedFactor;
                 }
@@ -538,7 +542,7 @@ public class GameMan : MonoBehaviour
     {
         if (m_waveNb == 0) // Cannot fire before 1st wave
             return false;
-        if (m_nextWaveTime > 0.0f) // Cannot fire between waves
+        if (m_nextWaveDate > System.DateTime.Now.ToOADate()) // Cannot fire between waves
             return false;
         if (m_myAvatar.m_ammoCount <= 0)
             return false;
@@ -662,9 +666,9 @@ public class GameMan : MonoBehaviour
         // Elevate pillar
         if (m_waveNb > 0)
         {
-            if (m_nextWaveTime > 0.0f)
+            if (m_nextWaveDate > 0.0)
             {
-                if (Time.time < m_nextWaveTime)
+                if (System.DateTime.Now.ToOADate() < m_nextWaveDate)
                 {
                     if (m_netMan.mode == NetworkManagerMode.Host)
                     {
@@ -677,7 +681,7 @@ public class GameMan : MonoBehaviour
 
                         foreach (PlayerControlMirror plr in m_allPlayers)
                         {
-                            foreach (ElementsScript elem in plr.m_myElems)
+                            foreach (ElementsNet elem in plr.m_myElems)
                             {
                                 Vector3 pos = elem.transform.position;
                                 pos.y += 0.1f * Time.deltaTime;
@@ -758,23 +762,12 @@ public class GameMan : MonoBehaviour
         // Activate first unused element
         if (Input.GetKeyUp(KeyCode.L))
         {
-            /*
-            foreach (ElementsScript elem in m_elemCubes)
+            foreach (ElementsNet elem in m_myAvatar.m_myElems)
             {
                 if (elem.m_used == false)
                 {
                     elem.GetColorGrabbable().m_lastGrabbed = Time.time;
-                    elem.transform.position = m_cameraRig.transform.position + Vector3.up * 2.0f;
-                    break;
-                }
-            }
-            */
-            foreach (ElementsScript elem in m_myAvatar.m_myElems)
-            {
-                if (elem.m_used == false)
-                {
-                    elem.GetColorGrabbable().m_lastGrabbed = Time.time;
-                    elem.transform.position = m_cameraRig.transform.position + Vector3.up * 2.0f;
+                    elem.transform.position = m_cameraRig.transform.position + Vector3.up * 2.0f; // Put it in the activation range
                     break;
                 }
             }
@@ -994,7 +987,7 @@ public class GameMan : MonoBehaviour
 
 
     // elem just has been triggered
-    public void TriggerElement(ElementsScript elem)
+    public void TriggerElement(ElementsNet elem)
     {
         JowLogger.Log($"Triggering element {elem.m_elemType}");
         AudioSource.PlayClipAtPoint(m_audioSounds[1], elem.transform.position);
@@ -1068,11 +1061,11 @@ public class GameMan : MonoBehaviour
 
 
     // Set right or left or both RPS to newVal in waitSec
-    public IEnumerator DestroyElementDelayed(float waitSec, ElementsScript elem)
+    public IEnumerator DestroyElementDelayed(float waitSec, ElementsNet elem)
     {
         yield return new WaitForSeconds(waitSec);
 
-        m_elemCubes.Remove(elem);
+        //m_elemCubes.Remove(elem); // JowNext: make sure it's removed from players list...
         GameObject.Destroy(elem);
     }
 }

@@ -6,10 +6,6 @@ using Mirror;
 
 public class PlayerControlMirror : NetworkBehaviour
 {
-    [SyncVar]
-    public Vector3 Control; //This is a sync var, mirror automatically shares and syncs this variable across all of the scripts on objects with the same network identity, but it can only be set by the server.
-
-    //public Color c;//color to change to if we are controlling this one
     public float m_jumpForce = 300.0f;
 
     [HideInInspector] public Tools2Mirror m_tool = null; // A tool that is spawned by the client
@@ -25,7 +21,7 @@ public class PlayerControlMirror : NetworkBehaviour
     public float m_curHitAmount = 0.0f; // cumulated hits taken in current frame
 
     public PillarMirror m_myPillar;
-    public List<ElementsScript> m_myElems = new List<ElementsScript>();
+    public List<ElementsNet> m_myElems = new List<ElementsNet>();
 
 
     public override void OnStartClient()
@@ -315,39 +311,67 @@ public class PlayerControlMirror : NetworkBehaviour
         GameMan.s_instance.m_playerLifeBar.m_cur = m_curLife;
         GameMan.s_instance.SetPlayerInfoText();
         GameMan.s_instance.m_logTitle.text = "";
-        LoadElements();
+        LoadElements(netId);
+        RepositionElements();
     }
 
 
     // Client side to update next wave time
     [ClientRpc]
-    public void RpcNextWaveTime(float _nextTime)
+    public void RpcNextWaveTime(double _AODate)
     {
-        JowLogger.Log($"Next wave @ {_nextTime}s");
-        GameMan.s_instance.m_nextWaveTime = _nextTime;
+        JowLogger.Log($"Player {netId} Next wave date {_AODate} = {System.DateTime.FromOADate(_AODate)}");
+        GameMan.s_instance.m_nextWaveDate = _AODate;
 
-        if (_nextTime > 0.0f)
+        if (_AODate > 0.0)
         {
+            HideElements();
             AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[4], transform.position);
         }
     }
 
 
-    [Command] public void LoadElements()
+    [Command] public void LoadElements(uint _netId)
     {
         GameObject elemPrefab = NetworkManager.singleton.spawnPrefabs[5];
         if (elemPrefab)
         {
             int count = m_myElems.Count + 1;
-            Vector3 pos = m_myPillar.transform.position + new Vector3(-0.5f, 2.0f + ((float)count * 0.2f), 0.0f);
-            pos += m_myPillar.transform.forward * 0.2f;
+            Vector3 pos = m_myPillar.transform.position + new Vector3(-1.2f, 2.0f + ((float)count * 0.2f), 0.0f);
+            pos += m_myPillar.transform.forward * 0.8f;
             GameObject newCube = Instantiate(elemPrefab, pos, Quaternion.identity);
             newCube.transform.position = pos + new Vector3(0.0f, 0.0f, 0.0f);
-            ElementsScript elem = newCube.GetComponent<ElementsScript>();
+            ElementsNet elem = newCube.GetComponent<ElementsNet>();
             int matId = Random.Range(0, 4);
             elem.ChangeType((Elements)matId, GameMan.s_instance.m_CubesElemMats[matId]);
+            elem.m_ownerId = _netId;
             NetworkServer.Spawn(newCube);
-            m_myElems.Add(elem);
+        }
+    }
+
+
+    public void HideElements()
+    {
+        foreach (ElementsNet elem in m_myElems)
+        {
+            elem.gameObject.SetActive(false);
+        }
+    }
+
+
+    public void RepositionElements()
+    {
+        int count = 1;
+        foreach (ElementsNet elem in m_myElems)
+        {
+            if (elem.m_used == true)
+                continue;
+
+            Vector3 pos = m_myPillar.transform.position + new Vector3(-1.2f, 2.0f + ((float)count * 0.2f), 0.0f);
+            pos += m_myPillar.transform.forward * 0.8f;
+            elem.transform.position = pos;
+            elem.gameObject.SetActive(true);
+            count++;
         }
     }
 }
