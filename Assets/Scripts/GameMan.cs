@@ -73,6 +73,12 @@ public class GameMan : MonoBehaviour
     public List<AudioClip> m_audioSounds;
 
 
+    public List<GameObject> GetPillarPool()
+    {
+        return m_pillarsPool;
+    }
+
+
     public void Awake()
     {
         // make sure only one instance of this manager ever exists
