@@ -40,7 +40,9 @@ public class WaveClass
         // Save random state
         Random.State rndState = Random.state;
         Random.InitState(666);
+        //hint = 5;
 
+        int modulo = 0;
         //Vector3 pillarPos = GameMan.s_instance.GetPillar().transform.position;
         foreach (GameObject pillar in GameMan.s_instance.GetPillarPool())
         {
@@ -49,7 +51,15 @@ public class WaveClass
             Vector2 onCircle = Random.insideUnitCircle; // on the circle around pillar at some distance
             onCircle.Normalize();
             //JowLogger.Log($"--------------------------------onCircle {onCircle}");
-            onCircle *= 5.0f;
+            if (modulo % 2 == 0)
+            {
+                onCircle *= 5.0f;
+            }
+            else
+            {
+                onCircle *= 10.0f;
+            }
+            //modulo++;
             //JowLogger.Log($"onCircle {onCircle} magnitude {onCircle.magnitude}");
             Vector3 spawnPoint2 = new Vector3(onCircle.x, pillarPos.y, onCircle.y);
 
@@ -136,6 +146,7 @@ public class WaveClass
             {
                 float y = pillarPos.y + 3.0f;
                 Vector3 spawnPoint = new Vector3(3.0f, y + 1.0f, 5.0f);
+                spawnPoint = spawnPoint2;
                 GameObject mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, facing);
                 Mobs mob = mobGo.GetComponent<Mobs>();
                 m_mobs.Add(mob);
@@ -143,6 +154,26 @@ public class WaveClass
                 NetworkServer.Spawn(mobGo);
 
                 spawnPoint = new Vector3(0.0f, y, 6.0f);
+                //---
+                /*
+                onCircle = Random.insideUnitCircle; // on the circle around pillar at some distance
+                onCircle.Normalize();
+                if (modulo % 2 == 0)
+                {
+                    onCircle *= 5.0f;
+                }
+                else
+                {
+                    onCircle *= 10.0f;
+                }
+                //spawnPoint2 = new Vector3(onCircle.x + 1.0f, pillarPos.y + 2.0f, onCircle.y);
+                spawnPoint2 = new Vector3(onCircle.x, pillarPos.y, onCircle.y);
+                facing = Quaternion.LookRotation(pillarPos - spawnPoint2);
+                */
+                spawnPoint2.y += 2.0f;
+                spawnPoint = spawnPoint2;
+                //---
+
                 mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, facing);
                 mob = mobGo.GetComponent<Mobs>();
                 m_mobs.Add(mob);
@@ -157,6 +188,7 @@ public class WaveClass
                 {
                     float y = pillarPos.y + 3.0f;
                     Vector3 spawnPoint = new Vector3(0.0f, y, 5.0f);
+                    spawnPoint = spawnPoint2;
                     GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, facing);
                     Mobs mob = mobGo.GetComponent<Mobs>();
                     m_mobs.Add(mob);
@@ -164,6 +196,24 @@ public class WaveClass
                     NetworkServer.Spawn(mobGo);
 
                     spawnPoint = new Vector3(3.0f, y + 1.0f, 5.0f);
+                    //---
+                    /*
+                    onCircle = Random.insideUnitCircle; // on the circle around pillar at some distance
+                    onCircle.Normalize();
+                    if (modulo % 2 == 0)
+                    {
+                        onCircle *= 5.0f;
+                    }
+                    else
+                    {
+                        onCircle *= 10.0f;
+                    }
+                    spawnPoint2 = new Vector3(onCircle.x, pillarPos.y + 2.0f, onCircle.y);
+                    facing = Quaternion.LookRotation(pillarPos - spawnPoint2);
+                    */
+                    spawnPoint2.y += 2.0f;
+                    spawnPoint = spawnPoint2;
+                    //---
                     mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, facing);
                     mob = mobGo.GetComponent<Mobs>();
                     m_mobs.Add(mob);
@@ -195,7 +245,24 @@ public class WaveClass
                 {
                     float y = pillarPos.y + 3.0f;
                     Vector3 spawnPoint = new Vector3(3.0f, y, 5.0f);
+                    //---
+                    /*
+                    onCircle = Random.insideUnitCircle; // on the circle around pillar at some distance
+                    onCircle.Normalize();
+                    if (modulo % 2 == 0)
+                    {
+                        onCircle *= 5.0f;
+                    }
+                    else
+                    {
+                        onCircle *= 10.0f;
+                    }
+                    spawnPoint2 = new Vector3(onCircle.x, pillarPos.y + 2.0f, onCircle.y);
+                    facing = Quaternion.LookRotation(pillarPos - spawnPoint2);
+                    */
+                    spawnPoint2.y += 2.0f;
                     spawnPoint = spawnPoint2;
+                    //---
                     GameObject mobGo = GameObject.Instantiate(mobCPrefab, spawnPoint, facing);
                     mobGo.name = "NewMobC";
                     Mobs mob = mobGo.GetComponent<Mobs>();
@@ -207,6 +274,7 @@ public class WaveClass
                 }
             }
 
+            modulo++;
         }
 		
         // Add medics

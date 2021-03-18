@@ -2,7 +2,7 @@
  Testing Mirror  
 This is using Unity 2019.4.14f1  
 
-#### Version 0.21  
+#### Version 0.22  
 
 
 ---------------------------------------------
@@ -38,3 +38,11 @@ We should have this loaded from a json file.
 Add a game over when life goes to 0.  
 Add a play again.  
 Choose difficulty.  
+
+---------------------------------------------
+## Version Notes
+### Version 0.22  
+Lower the player height.  
+Put the bonuses closer to the players.  
+Fix second mob spawn position. Must rework this in a better way.  
+

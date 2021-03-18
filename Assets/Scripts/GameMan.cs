@@ -36,6 +36,7 @@ public class GameMan : MonoBehaviour
     public List<PlayerControlMirror> m_allPlayers = new List<PlayerControlMirror>();
     private float m_lastConnected = 0.0f;
     private PlayerControlMirror m_myAvatar;
+    public float m_avatarHeight = 1.0f; // height above the pillar
     List<GameObject> m_pillarsPool = new List<GameObject>();
     public float m_upForce = 300.0f;
     public float m_rotForce = 10.0f;
@@ -106,7 +107,7 @@ public class GameMan : MonoBehaviour
         {
             GameObject intro = myCanvas.transform.GetChild(0).gameObject;
             m_logTitle = intro.GetComponent<TextMeshProUGUI>();
-            m_logTitle.text = "entry_room_1";
+            m_logTitle.text = "entry_" + Application.version;
         }
 
         // Set up the local player
@@ -280,10 +281,13 @@ public class GameMan : MonoBehaviour
         //m_logTitle.text = $"Mobs {m_wave.m_mobs.Count}";
 
         // Add a new element for each wave
+        // JowNext: clean this
+        /*
         if ((m_waveNb > 1) && (m_elemCubes.Count < 4))
         {
             AddNewElement(m_myAvatar.m_myPillar);
         }
+        */
 
         // Show and reposition elements
         int idx = 0;
@@ -330,12 +334,12 @@ public class GameMan : MonoBehaviour
             m_myAvatar = player;
 
             // Set player pos and rot from pillars
-            Vector3 pos = pil.transform.position + new Vector3(0.0f, 1.8f, 0.0f);
+            Vector3 pos = pil.transform.position + new Vector3(0.0f, m_avatarHeight, 0.0f);
             Quaternion rot = pil.transform.rotation;
             m_myAvatar.transform.SetPositionAndRotation(pos, rot);
             m_cameraRig.transform.SetPositionAndRotation(pos, rot);
 
-            LoadElementsCubes(m_myAvatar.m_myPillar);
+            //LoadElementsCubes(m_myAvatar.m_myPillar); // Deprecated
         }
 
         m_allPlayers.Add(player);
@@ -463,7 +467,8 @@ public class GameMan : MonoBehaviour
         }
 
 #if UNITY_ANDROID
-        // Update local player head position from headset
+        // Update local player head position from headset ... Setup Henigma
+        //if ((m_isUsingHands) && (m_myAvatar.isLocalPlayer)) // To be able to control head from keyboard
         if (m_myAvatar.isLocalPlayer)
         {
             m_myAvatar.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
@@ -701,7 +706,7 @@ public class GameMan : MonoBehaviour
                     pos.y += 0.1f * Time.deltaTime;
                     m_cameraRig.transform.position = pos;
                     */
-                    m_cameraRig.transform.position = m_myAvatar.m_myPillar.transform.position + new Vector3(0.0f, 1.8f, 0.0f);
+                    m_cameraRig.transform.position = m_myAvatar.m_myPillar.transform.position + new Vector3(0.0f, m_avatarHeight, 0.0f);
                 }
             }
         }
@@ -742,7 +747,6 @@ public class GameMan : MonoBehaviour
         {
             if (m_myAvatar != null)
             {
-                //player.PositionPlayer(new Vector3(0.1f, 1.0f, 1.8f));
                 m_myAvatar.transform.SetPositionAndRotation(new Vector3(0.1f, 1.0f, 1.8f), Quaternion.identity);
             }
             else
@@ -939,6 +943,12 @@ public class GameMan : MonoBehaviour
         {
             //float pinchStrength = m_leftHand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
             //m_logTitle.text = $"pinchStrength = {pinchStrength}";
+
+            if (m_isUsingHands == false)
+            {
+                m_isUsingHands = true;
+            }
+
             Transform trs = m_myAvatar.transform;
             if (m_isUsingHands)
             {

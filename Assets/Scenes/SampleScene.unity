@@ -1050,15 +1050,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_logTitle: {fileID: 0}
   m_netMan: {fileID: 313177742}
+  m_minPlayerNb: 2
+  m_firstWaveDelay: 5
   m_allPlayers: []
+  m_avatarHeight: 0.8
   m_upForce: 300
   m_rotForce: 100
   m_YForce: 5
   m_waveNb: 0
-  m_nextWaveTime: 0
+  m_nextWaveDate: 0
   m_playerLifeBar: {fileID: 1433800530}
   m_playerInfoText: {fileID: 1930667003}
   m_cameraRig: {fileID: 0}
+  m_CubesElemMats:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   m_startElementCount: 2
   m_elementCubePrefab: {fileID: 7156512036141905571, guid: 68751d69f462bf64a8ba11e8e42500cb,
     type: 3}

@@ -337,8 +337,10 @@ public class PlayerControlMirror : NetworkBehaviour
         if (elemPrefab)
         {
             int count = m_myElems.Count + 1;
-            Vector3 pos = m_myPillar.transform.position + new Vector3(-1.2f, 2.0f + ((float)count * 0.2f), 0.0f);
-            pos += m_myPillar.transform.forward * 0.8f;
+            //Vector3 pos = m_myPillar.transform.position + new Vector3(-1.2f, 2.0f + ((float)count * 0.2f), 0.0f);
+            //pos += m_myPillar.transform.forward * 0.8f;
+            Vector3 pos = m_myPillar.transform.position + new Vector3(-1.0f, 2.25f + ((float)count * 0.2f), 0.0f);
+            pos += m_myPillar.transform.forward * 0.5f;
             GameObject newCube = Instantiate(elemPrefab, pos, Quaternion.identity);
             newCube.transform.position = pos + new Vector3(0.0f, 0.0f, 0.0f);
             ElementsNet elem = newCube.GetComponent<ElementsNet>();
@@ -367,8 +369,10 @@ public class PlayerControlMirror : NetworkBehaviour
             if (elem.m_used == true)
                 continue;
 
-            Vector3 pos = m_myPillar.transform.position + new Vector3(-1.2f, 2.0f + ((float)count * 0.2f), 0.0f);
-            pos += m_myPillar.transform.forward * 0.8f;
+            //Vector3 pos = m_myPillar.transform.position + new Vector3(-1.2f, 2.0f + ((float)count * 0.2f), 0.0f);
+            //pos += m_myPillar.transform.forward * 0.8f;
+            Vector3 pos = m_myPillar.transform.position + new Vector3(-1.0f, 2.25f + ((float)count * 0.2f), 0.0f);
+            pos += m_myPillar.transform.forward * 0.5f;
             elem.transform.position = pos;
             elem.gameObject.SetActive(true);
             count++;
