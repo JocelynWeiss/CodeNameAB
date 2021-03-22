@@ -54,6 +54,8 @@ public class GameMan : MonoBehaviour
     private GameObject m_localPlayerHead;
     OVRHand m_leftHand;
     OVRHand m_rightHand;
+    private HandsMirror m_rightHandMirror;
+    private HandsMirror m_leftHandMirror;
     private float m_rightLastBulletTime = 0.0f;
     private float m_leftLastBulletTime = 0.0f;
     private float m_rightRPS = 1.0f; // Round per seconds (seconds between 2 shots)
@@ -376,6 +378,28 @@ public class GameMan : MonoBehaviour
     }
 
 
+    public void RegisterHand(HandsMirror hand, bool hasAuthority)
+    {
+        if (hasAuthority)
+        {
+            if (hand.m_handType == OVRHand.Hand.HandRight)
+            {
+                m_rightHandMirror = hand;
+            }
+            else if (hand.m_handType == OVRHand.Hand.HandLeft)
+            {
+                m_leftHandMirror = hand;
+            }
+            else
+            {
+                Debug.LogError($"{gameObject} HandMirror: {hand} has incorrect settings: {hand.m_handType}.");
+            }
+        }
+
+        JowLogger.Log($"+++ Registering new hand {hand}, {hand.netId}, authority= {hasAuthority}, type {hand.m_handType}");
+    }
+
+
     // Return this player pillar
     public GameObject GetPillar()
     {
@@ -474,6 +498,26 @@ public class GameMan : MonoBehaviour
             m_myAvatar.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
         }
 #endif
+        if (m_myAvatar.isLocalPlayer)
+        {
+            if (m_isUsingHands)
+            {
+                m_rightHandMirror.transform.SetPositionAndRotation(m_rightHand.transform.position, m_rightHand.transform.rotation);
+                m_leftHandMirror.transform.SetPositionAndRotation(m_leftHand.transform.position, m_leftHand.transform.rotation);
+            }
+            else
+            {
+                Vector3 pos = m_myAvatar.transform.position;
+                Quaternion q = m_myAvatar.transform.rotation;
+                Vector3 r = m_myAvatar.transform.right * 0.2f;
+                Vector3 l = m_myAvatar.transform.right * -0.2f;
+                m_rightHandMirror.transform.SetPositionAndRotation(pos + r, q);
+                m_leftHandMirror.transform.SetPositionAndRotation(pos + l, q);
+
+                //m_rightHandMirror.transform.localScale *= 0.1f; // It seems the whole transform is sync anyway
+            }
+        }
+
 
         if (m_myAvatar.isServer == false)
             return;

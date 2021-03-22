@@ -54,7 +54,7 @@ public class PlayerControlMirror : NetworkBehaviour
         transform.SetPositionAndRotation(new Vector3(1.0f + GameMan.s_instance.m_allPlayers.Count, 2.0f, 1.0f), q);
 
         JowLogger.Log($"Creating client {n} --->netId {netid}: {this} OnStartClient @ {Time.fixedTime}s hasAuthority {hasAuthority}");
-        JowLogger.Log($"{transform.position}");
+        //JowLogger.Log($"{transform.position}");
         /*
         if (hasAuthority)
         {
@@ -73,6 +73,13 @@ public class PlayerControlMirror : NetworkBehaviour
         m_renderer.material.color = m_syncColor;
 
         GameMan.s_instance.RegisterNewPlayer(this.gameObject, hasAuthority);
+
+        // Spawn hands
+        if (hasAuthority)
+        {
+            CmdSpawnHand(OVRHand.Hand.HandRight);
+            CmdSpawnHand(OVRHand.Hand.HandLeft);
+        }
     }
 
 
@@ -239,6 +246,33 @@ public class PlayerControlMirror : NetworkBehaviour
             compTool.name = "AvatarTool2";
             compTool.m_Owner = this.gameObject;
             compTool.SetToolColour(m_syncColor);
+            NetworkServer.Spawn(tool, this.gameObject); // Second param here set the authority
+        }
+    }
+
+
+    [Command]
+    void CmdSpawnHand(OVRHand.Hand type)
+    {
+        int prefabIdx = 6;
+        Vector3 dec = new Vector3(0.2f, 0.0f, 0.0f);
+        if (type == OVRHand.Hand.HandLeft)
+        {
+            prefabIdx = 7;
+            dec.x = -0.2f;
+        }
+
+        GameObject handPrefab = NetworkManager.singleton.spawnPrefabs[prefabIdx];
+        if (handPrefab)
+        {
+            GameObject tool = Instantiate(handPrefab, transform.position, transform.rotation);
+            Vector3 pos = transform.position + dec;
+            Quaternion rot = transform.rotation;
+            tool.transform.SetPositionAndRotation(pos, rot);
+            HandsMirror hand = tool.GetComponent<HandsMirror>();
+            hand.m_handType = type;
+            hand.m_Owner = this;
+            hand.m_syncColor = m_syncColor;
             NetworkServer.Spawn(tool, this.gameObject); // Second param here set the authority
         }
     }
