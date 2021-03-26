@@ -38,11 +38,21 @@ public class ElementsNet : NetworkBehaviour
         m_used = false;
         //JowLogger.Log($"ElementsNet Start ++++++++++ {m_elemType}, netId {netId}, hasAuthority {hasAuthority}, avatarAuthority {GameMan.s_instance.GetLocalPlayer().hasAuthority}");
         ChangeType(m_elemType, GameMan.s_instance.m_CubesElemMats[(int)m_elemType]);
+        /*
         PlayerControlMirror localPlr = GameMan.s_instance.GetLocalPlayer();
         if (localPlr.netId == m_ownerId)
         {
             localPlr.m_myElems.Add(this);
             JowLogger.Log($"\t ++++++++++ Add elem to player {localPlr.name}, count {localPlr.m_myElems.Count}");
+        }
+        */
+        foreach (PlayerControlMirror plr in GameMan.s_instance.m_allPlayers)
+        {
+            if (m_ownerId == plr.netId)
+            {
+                plr.m_myElems.Add(this);
+                JowLogger.Log($"\t ++++++++++ Add elem to player {plr.name}, count {plr.m_myElems.Count} --- netId {netId}");
+            }
         }
     }
 
@@ -86,11 +96,29 @@ public class ElementsNet : NetworkBehaviour
     }
 
 
+    public override void OnStopClient()
+    {
+        JowLogger.Log($"XXXXXXXXXXXXXXXXXXXXX  OnStopClient elem {netId}");
+        foreach (PlayerControlMirror plr in GameMan.s_instance.m_allPlayers)
+        {
+            if (plr.m_myElems.Contains(this))
+            {
+                plr.m_myElems.Remove(this);
+                JowLogger.Log($"\t removing elem {netId} from client {plr.netId}");
+            }
+        }
+        base.OnStopClient();
+    }
+
+
+    /*
     // Remove this object from the scene
     private void OnDestroy()
     {
+        JowLogger.Log($"XXXXXXXXXXXXXXXXXXXXX  Destroying elem {netId}");
         Destroy(gameObject);
     }
+    */
 
 
     // Make it fall after waitSec
@@ -101,5 +129,12 @@ public class ElementsNet : NetworkBehaviour
         Rigidbody rb = GetComponent<Rigidbody>();
         rb.isKinematic = false;
         rb.useGravity = true;
+    }
+
+
+    public void DestroySelf()
+    {
+        JowLogger.Log($"--- --- --- DestroySelf {netId} Owner {m_ownerId}");
+        NetworkManager.Destroy(this.gameObject);
     }
 }

@@ -724,6 +724,7 @@ MonoBehaviour:
   - {fileID: 7156512036141905571, guid: 2192cf2110b8557468c602ee31b1ad03, type: 3}
   - {fileID: 8870109761985513667, guid: 0810e12009a63f4498a17fe551ed43bb, type: 3}
   - {fileID: 7791026181210483131, guid: 3c40e8d5773854148ba8296b7ea86c92, type: 3}
+  - {fileID: 537089942514433231, guid: 0ab8482d019c4a447a9232021db07d5c, type: 3}
 --- !u!1 &467482175 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100002, guid: 126d619cf4daa52469682f85c1378b4a,
@@ -1069,7 +1070,7 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  m_startElementCount: 2
+  m_maxElementCount: 4
   m_elementCubePrefab: {fileID: 7156512036141905571, guid: 68751d69f462bf64a8ba11e8e42500cb,
     type: 3}
   m_audioSounds:

@@ -54,4 +54,8 @@ Put the bonuses closer to the players.
 Fix second mob spawn position. Must rework this in a better way.  
 ### Version 0.23  
 Sync hands.  
+Fix client grabbing peer element.  
+### Version 0.24  
+Adds giant wrecking balls.  
+
 

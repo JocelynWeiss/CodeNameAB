@@ -68,7 +68,7 @@ public class Mobs : NetworkBehaviour
 
     public override void OnStartClient()
     {
-        JowLogger.Log($"{Time.fixedTime}s OnStartClient---");
+        //JowLogger.Log($"{Time.fixedTime}s OnStartClient---");
         if (m_mobType != MobsType.MobMedic)
         {
             AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[3], transform.position);
@@ -87,7 +87,7 @@ public class Mobs : NetworkBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        JowLogger.Log($"{Time.fixedTime}s Start--- {name}");
+        //JowLogger.Log($"{Time.fixedTime}s Start--- {name} netId {netId}");
     }
 
 
@@ -111,7 +111,7 @@ public class Mobs : NetworkBehaviour
         m_armor = armor;
         m_curSpeedFactor = m_speedFactor + speed;
 
-        JowLogger.Log($"{Time.fixedTime}s {name} {m_life}pv");
+        JowLogger.Log($"{Time.fixedTime}s {name} {netId} has {m_life}pv");
 
         if (gameObject.activeSelf == true)
         {

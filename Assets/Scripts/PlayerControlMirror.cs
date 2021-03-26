@@ -19,9 +19,22 @@ public class PlayerControlMirror : NetworkBehaviour
     public int m_ammoCount = 100;
     [SyncVar(hook = nameof(SetAvatarLife))] public float m_curLife = 1000.0f;
     public float m_curHitAmount = 0.0f; // cumulated hits taken in current frame
+    public int m_wallCollAmount = 0; // Number of current collision with wall or wrecking
 
     public PillarMirror m_myPillar;
     public List<ElementsNet> m_myElems = new List<ElementsNet>();
+
+
+    // Add to the amount of collision with walls
+    public void AddWallDamage(int amount)
+    {
+        m_wallCollAmount += amount;
+
+        if (amount > 0)
+        {
+            AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[4], transform.position);
+        }
+    }
 
 
     public override void OnStartClient()
@@ -293,6 +306,15 @@ public class PlayerControlMirror : NetworkBehaviour
             //JowLogger.Log($"========================= Seting color to {m_syncColor} @ {Time.fixedTime}s"); // JowTodo: Why is this called every frame ?
         }
         */
+
+        // Server part
+        if (NetworkManager.singleton.mode != NetworkManagerMode.Host)
+            return;
+
+        if (m_wallCollAmount > 0)
+        {
+            m_curLife -= m_wallCollAmount * Time.fixedDeltaTime * 500.0f;
+        }
     }
 
 
@@ -337,7 +359,7 @@ public class PlayerControlMirror : NetworkBehaviour
     [ClientRpc]
     public void RpcWaveNb(int newWaveNb)
     {
-        JowLogger.Log($"netId {netId}, newWaveNb = {newWaveNb}");
+        JowLogger.Log($"netId {netId}, newWaveNb = {newWaveNb}, hasAuthority {hasAuthority}");
         GameMan.s_instance.m_waveNb = newWaveNb;
         m_ammoCount = 100;
         m_curLife = 1000.0f;
@@ -345,8 +367,21 @@ public class PlayerControlMirror : NetworkBehaviour
         GameMan.s_instance.m_playerLifeBar.m_cur = m_curLife;
         GameMan.s_instance.SetPlayerInfoText();
         GameMan.s_instance.m_logTitle.text = "";
-        LoadElements(netId);
-        RepositionElements();
+
+        if ((newWaveNb > 0) && (m_myElems.Count < GameMan.s_instance.m_maxElementCount))
+        {
+            //if (GameMan.s_instance.m_netMan.mode == NetworkManagerMode.Host)
+            if (hasAuthority)
+            {
+                JowLogger.Log($"netId {netId}, asking to spawn a new element...");
+                LoadElements(netId);
+            }
+        }
+
+        if (hasAuthority)
+        {
+            RepositionElements();
+        }
     }
 
 
@@ -359,7 +394,8 @@ public class PlayerControlMirror : NetworkBehaviour
 
         if (_AODate > 0.0)
         {
-            HideElements();
+            if (hasAuthority)
+                HideElements();
             AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[4], transform.position);
         }
     }
@@ -381,7 +417,8 @@ public class PlayerControlMirror : NetworkBehaviour
             int matId = Random.Range(0, 4);
             elem.ChangeType((Elements)matId, GameMan.s_instance.m_CubesElemMats[matId]);
             elem.m_ownerId = _netId;
-            NetworkServer.Spawn(newCube);
+            //NetworkServer.Spawn(newCube);
+            NetworkServer.Spawn(newCube, this.gameObject); // Client authoritative
         }
     }
 
@@ -411,5 +448,72 @@ public class PlayerControlMirror : NetworkBehaviour
             elem.gameObject.SetActive(true);
             count++;
         }
+    }
+
+
+    public void DestroyElem(uint _netId, uint _ownerId)
+    {
+        JowLogger.Log($"\t DestroyElem {_netId} from plr {netId}, ownerId {_ownerId}, isServer {isServer}, mode {NetworkManager.singleton.mode}");
+        if (isServer)
+        {
+            foreach (PlayerControlMirror plr in GameMan.s_instance.m_allPlayers)
+            {
+                if (plr.netId == _ownerId)
+                {
+                    plr.RpcDestroyElem(_netId);
+                }
+            }
+        }
+        else
+        {
+            CmdDestroyElem(_netId, _ownerId);
+        }
+    }
+
+
+    // Server will destroy the element from this client. Make sure it's the owner.
+    [ClientRpc] void RpcDestroyElem(uint _netId)
+    {
+        foreach (ElementsNet elem in m_myElems)
+        {
+            if (elem.netId == _netId)
+            {
+                // Here I have the authority, it's mine so I can delete it...
+                elem.DestroySelf();
+            }
+        }
+    }
+
+
+    // Client need to send a command to the server to destroy another client element
+    [Command] void CmdDestroyElem(uint _netId, uint _ownerId)
+    {
+        JowLogger.Log($"\t CmdDestroyElem from {netId}, isServer {isServer}, mode {NetworkManager.singleton.mode}");
+        foreach (PlayerControlMirror plr in GameMan.s_instance.m_allPlayers)
+        {
+            if (plr.netId == _ownerId)
+            {
+                plr.RpcDestroyElem(_netId);
+            }
+        }
+    }
+
+
+    [TargetRpc] void TrgDestroyElem(uint _netId)
+    {
+        foreach (ElementsNet elem in m_myElems)
+        {
+            if (elem.netId == _netId)
+            {
+                // Here I have the authority, it's mine so I can delete it...
+                elem.DestroySelf();
+            }
+        }
+    }
+
+
+    [Command] public void CmdTest()
+    {
+        JowLogger.Log($"TTTTTTTTTTTTTTTTTTT CmdTest from {netId} hasAuthority {hasAuthority} isServer {isServer}");
     }
 }

@@ -6,9 +6,9 @@ using Mirror;
 using OculusSampleFramework;
 
 
-// A game manager dedicated to test mirror networking services...
+// The game manager using mirror networking services...
 //JowNext: Add a game over if no more life
-// Sync end of wave to elevate client pillars, use RPC in PlayerControlMirror
+// Hold a list of players affected by walls in wreckingball class to compute damages on the server.
 
 
 
@@ -64,9 +64,11 @@ public class GameMan : MonoBehaviour
     public OVRCameraRig m_cameraRig;
 
     public Material[] m_CubesElemMats = new Material[4];
-    public int m_startElementCount = 4;
+    public int m_maxElementCount = 4; // Max element per player
     public GameObject m_elementCubePrefab;
-    List<ElementsScript> m_elemCubes = new List<ElementsScript>();
+    //List<ElementsScript> m_elemCubes = new List<ElementsScript>(); // Deprecated
+
+    List<WreckingBallMirror> m_wreckings = new List<WreckingBallMirror>(); // Server Side only
 
     // Audio...
     //[InspectorNote("Sound Setup", "Press '1' to play testSound1 and '2' to play testSound2")]
@@ -98,8 +100,10 @@ public class GameMan : MonoBehaviour
         if (s_log == null)
         {
             s_log = new JowLogger();
+            //*
             if (UnityEngine.Application.platform != RuntimePlatform.Android)
                 JowLogger.m_addTimeToName = true; // only to avoid collision with multiple instances
+            //*/
         }
 
         JowLogger.Log($"GameMan Awake @ {Time.fixedTime}s Version {Application.version}");
@@ -152,6 +156,22 @@ public class GameMan : MonoBehaviour
     public PlayerControlMirror GetLocalPlayer()
     {
         return m_myAvatar;
+    }
+
+
+    public PlayerControlMirror GetPlayerPerId(uint _netId)
+    {
+        PlayerControlMirror ret = null;
+        foreach (PlayerControlMirror plr in m_allPlayers)
+        {
+            if (plr.netId == _netId)
+            {
+                ret = plr;
+                break;
+            }
+        }
+
+        return ret;
     }
 
 
@@ -258,15 +278,6 @@ public class GameMan : MonoBehaviour
     }
 
 
-    void LoadElementsCubes(PillarMirror pillar)
-    {
-        for (int i = 0; i < m_startElementCount; ++i)
-        {
-            AddNewElement(pillar);
-        }
-    }
-
-
     // Initialise the next wave to come (Server side only)
     public void InitNewWave()
     {
@@ -276,31 +287,16 @@ public class GameMan : MonoBehaviour
             plr.RpcWaveNb(m_waveNb);
             plr.RpcNextWaveTime(0.0);
         }
-        //m_myAvatar.RpcWaveNb(m_waveNb);
-        //m_myAvatar.CmdEndOfWave(m_waveNb);
-        //m_myAvatar.RpcNextWaveTime(0.0f);
         m_wave.InitWave(m_waveNb);
         //m_logTitle.text = $"Mobs {m_wave.m_mobs.Count}";
 
-        // Add a new element for each wave
-        // JowNext: clean this
+        // Test WreckingBall
         /*
-        if ((m_waveNb > 1) && (m_elemCubes.Count < 4))
+        foreach (PlayerControlMirror plr in m_allPlayers)
         {
-            AddNewElement(m_myAvatar.m_myPillar);
+            StartCoroutine(SpawnWreckingBallDelayed(3.0f, plr));
         }
         */
-
-        // Show and reposition elements
-        int idx = 0;
-        foreach (ElementsScript elem in m_elemCubes)
-        {
-            Vector3 pos = m_myAvatar.m_myPillar.transform.position + new Vector3(-0.5f, 2.0f + ((float)idx * 0.2f), 0.2f);
-            elem.transform.SetPositionAndRotation(pos, Quaternion.identity);
-
-            elem.gameObject.SetActive(true);
-            idx++;
-        }
 
         SetPlayerInfoText();
     }
@@ -346,10 +342,7 @@ public class GameMan : MonoBehaviour
 
         m_allPlayers.Add(player);
         JowLogger.Log($"---+++ Registering new player @ {Time.fixedTime}s, {newPlayer}, netId {player.netId}, playerCount {m_allPlayers.Count}");
-        JowLogger.Log($"on pillar {player.m_myPillar.name}");
-
-        // JowNext: Add elements for each player
-
+        JowLogger.Log($"on pillar {player.m_myPillar.name}, isServer {player.isServer}");
 
         if (m_netMan.mode == NetworkManagerMode.Host)
         {
@@ -436,6 +429,16 @@ public class GameMan : MonoBehaviour
     }
 
 
+    // Remove a wrecking from the list
+    public void RemoveWrecking(WreckingBallMirror wrk)
+    {
+        if (m_wreckings.Contains(wrk))
+        {
+            m_wreckings.Remove(wrk);
+        }
+    }
+
+
     // End of a wave (no mobs left)
     void WaveEnded()
     {
@@ -445,11 +448,12 @@ public class GameMan : MonoBehaviour
         m_wave.FinishWave();
         m_myAvatar.RpcNextWaveTime(date);
 
-        // Hide remaining elements
-        foreach(ElementsScript elem in m_elemCubes)
+        // Destroy wreckings
+        foreach (WreckingBallMirror wrk in m_wreckings)
         {
-            elem.gameObject.SetActive(false);
+            NetworkServer.Destroy(wrk.gameObject);
         }
+        m_wreckings.Clear();
     }
 
 
@@ -543,10 +547,12 @@ public class GameMan : MonoBehaviour
         }
 
         // Reset all damage taken last frame
+        /*
         foreach (PlayerControlMirror plr in m_allPlayers)
         {
             plr.m_curHitAmount = 0.0f;
         }
+        */
         // Handle mobs mouvements
         if (m_wave.m_mobs.Count > 0)
         {
@@ -585,6 +591,7 @@ public class GameMan : MonoBehaviour
             if (plr.m_curHitAmount > 0.0f)
             {
                 plr.m_curLife = plr.m_curLife - plr.m_curHitAmount * Time.fixedDeltaTime;
+                plr.m_curHitAmount = 0.0f;
             }
         }
 
@@ -657,8 +664,10 @@ public class GameMan : MonoBehaviour
     }
 
 
+    // Deprecated
     void TestRotatingElem()
     {
+        /*
         if (m_elemCubes.Count == 0)
             return;
 
@@ -681,6 +690,7 @@ public class GameMan : MonoBehaviour
         angle += phase;
         pos = mobPos + new Vector3(Mathf.Cos(angle), Mathf.Cos(angle) * Mathf.Sin(angle), Mathf.Sin(angle)) * 1.0f;
         m_elemCubes[1].transform.position = pos;
+        */
     }
 
 
@@ -827,6 +837,38 @@ public class GameMan : MonoBehaviour
             }
         }
 
+        if (Input.GetKeyUp(KeyCode.M))
+        {
+            if (m_allPlayers.Count > 1)
+            {
+                PlayerControlMirror plr = m_allPlayers[0];
+                if (plr == m_myAvatar)
+                    plr = m_allPlayers[1];
+
+                JowLogger.Log($"================== elem count {plr.m_myElems.Count}");
+                if (plr.m_myElems.Count > 0)
+                {
+                    ElementsNet elem = plr.m_myElems[0];
+                    if (elem.m_used == false)
+                    {
+                        elem.GetColorGrabbable().m_lastGrabbed = Time.time;
+                        elem.transform.position = m_cameraRig.transform.position + Vector3.up * 2.0f; // Put it in the activation range
+                    }
+                }
+            }
+        }
+
+        if (Input.GetKeyUp(KeyCode.N))
+        {
+            /*
+            foreach (PlayerControlMirror plr in m_allPlayers)
+            {
+                JowLogger.Log($"Calling cmd from {plr.netId}... plr.hasAuthority {plr.hasAuthority}");
+                plr.CmdTest();
+            }
+            */
+        }
+        
         // Inverse view for testing
         if (Input.GetKeyUp(KeyCode.V))
         {
@@ -868,6 +910,11 @@ public class GameMan : MonoBehaviour
                 }
             }
             //*/
+        }
+
+        if (Input.GetKeyUp(KeyCode.End))
+        {
+            WaveEnded();
         }
 
         if (Input.GetKey(KeyCode.Keypad6))
@@ -1049,7 +1096,7 @@ public class GameMan : MonoBehaviour
     // elem just has been triggered
     public void TriggerElement(ElementsNet elem)
     {
-        JowLogger.Log($"Triggering element {elem.m_elemType}");
+        JowLogger.Log($"Triggering element {elem.m_elemType}, {elem.netId}");
         AudioSource.PlayClipAtPoint(m_audioSounds[1], elem.transform.position);
 
         switch (elem.m_elemType)
@@ -1084,14 +1131,41 @@ public class GameMan : MonoBehaviour
         }
 
         StartCoroutine(DestroyElementDelayed(5.0f, elem));
+    }
 
-        foreach (PlayerControlMirror plr in m_allPlayers)
+
+    // Spawn a big wrecking ball to aim to one player. (ServerSide only)
+    public void SpawnWreckingBall(PlayerControlMirror plr)
+    {
+        int prefabIdx = 8;
+        if (NetworkManager.singleton.spawnPrefabs.Count <= prefabIdx)
         {
-            if (plr.m_myElems.Contains(elem))
-            {
-                plr.m_myElems.Remove(elem);
-            }
+            Debug.LogWarning($"No prefab for wrekcingBall, did you drag&drop them in the inspector?");
+            return;
         }
+
+        // Pick a player to aim to
+        //PlayerControlMirror plr = m_allPlayers[0];
+        Vector3 plrPos = plr.transform.position;
+        Vector3 spawnPoint = plrPos + plr.m_myPillar.transform.forward * 5.0f;
+        spawnPoint.y += 2.0f;
+        Quaternion facing = Quaternion.LookRotation(plrPos - spawnPoint);
+        GameObject prefab = NetworkManager.singleton.spawnPrefabs[prefabIdx];
+        GameObject go = GameObject.Instantiate(prefab, spawnPoint, facing);
+        //go.transform.localScale *= 2.0f;
+        WreckingBallMirror ball = go.GetComponent<WreckingBallMirror>();
+        //ball.m_speedFactor = 0.01f;
+        m_wreckings.Add(ball);
+        NetworkServer.Spawn(go);
+    }
+
+
+    // Spawn a wreking ball delayed by x seconds for a specific player
+    public IEnumerator SpawnWreckingBallDelayed(float waitSec, PlayerControlMirror plr)
+    {
+        yield return new WaitForSeconds(waitSec);
+
+        SpawnWreckingBall(plr);
     }
 
 
@@ -1120,12 +1194,11 @@ public class GameMan : MonoBehaviour
     }
 
 
-    // Set right or left or both RPS to newVal in waitSec
     public IEnumerator DestroyElementDelayed(float waitSec, ElementsNet elem)
     {
         yield return new WaitForSeconds(waitSec);
 
-        //m_elemCubes.Remove(elem); // JowNext: make sure it's removed from players list...
-        GameObject.Destroy(elem);
+        JowLogger.Log($"aAa --- Trying to destroy {elem.netId} elem.hasAuthority {elem.hasAuthority} mode {NetworkManager.singleton.mode}, isServer {m_myAvatar.isServer}");
+        m_myAvatar.DestroyElem(elem.netId, elem.m_ownerId);
     }
 }
