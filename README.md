@@ -2,7 +2,7 @@
  Testing Mirror  
 This is using Unity 2019.4.14f1  
 
-#### Version 0.23 
+#### Version 0.241 
 
 
 ---------------------------------------------
@@ -30,7 +30,7 @@ Life, ammo, fire rate
 
 ---------------------------------------------
 ## Waves
-7 different waves at the moment  
+9 different waves at the moment  
 We should have this loaded from a json file.  
 
 ---------------------------------------------
@@ -57,5 +57,7 @@ Sync hands.
 Fix client grabbing peer element.  
 ### Version 0.24  
 Adds giant wrecking balls.  
+##### Version 0.241  
+Adds fade to red with life.  
 
 

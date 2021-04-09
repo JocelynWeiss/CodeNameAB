@@ -68,6 +68,8 @@ public class GameMan : MonoBehaviour
     public GameObject m_elementCubePrefab;
     //List<ElementsScript> m_elemCubes = new List<ElementsScript>(); // Deprecated
 
+    public Material m_MedicMat;
+
     List<WreckingBallMirror> m_wreckings = new List<WreckingBallMirror>(); // Server Side only
 
     // Audio...
@@ -132,6 +134,7 @@ public class GameMan : MonoBehaviour
         }
 
         LoadElementsMats();
+        LoadMedicMat();
 
         m_wave = new WaveClass();
     }
@@ -246,6 +249,17 @@ public class GameMan : MonoBehaviour
     }
 
 
+    // Load Medic mob mat
+    void LoadMedicMat()
+    {
+        m_MedicMat = Resources.Load("MedicMat", typeof(Material)) as Material;
+        if (m_MedicMat == null)
+        {
+            Debug.LogError("Could not load Medic material, place it in Resources Folder!");
+        }
+    }
+
+
     // Instantiate a new element (DEPRECATED)
     void AddNewElement(PillarMirror _pillar)
     {
@@ -282,21 +296,26 @@ public class GameMan : MonoBehaviour
     public void InitNewWave()
     {
         m_waveNb++;
+        //m_waveNb = 5; // Force to test
         foreach (PlayerControlMirror plr in m_allPlayers)
         {
             plr.RpcWaveNb(m_waveNb);
             plr.RpcNextWaveTime(0.0);
         }
         m_wave.InitWave(m_waveNb);
+        m_nextWaveDate = 0.0;
         //m_logTitle.text = $"Mobs {m_wave.m_mobs.Count}";
 
         // Test WreckingBall
-        /*
-        foreach (PlayerControlMirror plr in m_allPlayers)
+        if (m_waveNb >= 5)
         {
-            StartCoroutine(SpawnWreckingBallDelayed(3.0f, plr));
+            //*
+            foreach (PlayerControlMirror plr in m_allPlayers)
+            {
+                StartCoroutine(SpawnWreckingBallDelayed(3.0f, plr));
+            }
+            //*/
         }
-        */
 
         SetPlayerInfoText();
     }
@@ -596,6 +615,21 @@ public class GameMan : MonoBehaviour
         }
 
         //TestRotatingElem();
+
+        // Draw a forward line from pillars
+        /*
+        foreach (GameObject pil in m_pillarsPool)
+        {
+            Vector3 start = pil.transform.position;
+            Vector3 end = start + pil.transform.forward * 5.0f;
+            Debug.DrawLine(start, end, Color.red);
+            float angle = 45.0f;
+            Quaternion rot = Quaternion.AngleAxis(angle, pil.transform.up);
+            end = (rot * pil.transform.forward).normalized;
+            end = start + end * 5.0f;
+            Debug.DrawLine(start, end, Color.yellow);
+        }
+        */
     }
 
 
@@ -697,16 +731,38 @@ public class GameMan : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //m_logTitle.text = $"{Time.fixedTime}s\n{m_netMan.networkAddress}\n{m_lastConnected}s"; // Put back
+        //m_logTitle.text = $"{Time.fixedTime}s\n{m_netMan.networkAddress}\n{m_lastConnected}s"; // Connexion timer
 
+        /*
         if (m_myAvatar)
         {
             string mobLife = "-";
-            if (m_wave.m_mobs.Count > 0)
-                mobLife = m_wave.m_mobs[0].m_life.ToString("f2");
-
-            //m_logTitle.text = $"{m_avatar.transform.position}\n{mobLife}"; // Put back
+            float lifeSum = 0.0f;
+            foreach (Mobs mob in m_wave.m_mobs)
+            {
+                if (mob.m_mobType != MobsType.MobMedic)
+                {
+                    lifeSum += mob.m_life;
+                }
+            }
+            mobLife = lifeSum.ToString("f2");
+            m_logTitle.text = $"{m_myAvatar.transform.position}\n{mobLife}";
         }
+        */
+
+        if (m_myAvatar)
+        {
+            // Have this script attached to cameraRig->TrackingSpace->CenterEyeAnchor
+            OVRScreenFade fader = m_cameraRig.GetComponentInChildren<OVRScreenFade>();
+            if (fader)
+            {
+                fader.fadeColor = Color.red;
+                //float f = (1.0f - m_playerLifeBar.m_fill.fillAmount);
+                float f = (0.5f - m_playerLifeBar.m_fill.fillAmount) + 0.25f;
+                fader.SetFadeLevel(f);
+            }
+        }
+
 
         if (!m_netMan.isNetworkActive)
         {

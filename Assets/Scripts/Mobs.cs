@@ -13,6 +13,7 @@ public class Mobs : NetworkBehaviour
     public string m_name;
     [SyncVar(hook = nameof(SetMobLife))] public float m_life;
     [SyncVar] public float m_armor;
+    public float m_healingForce = 2.0f;
     public float m_speedFactor = 0.5f;
     [ViewOnly] public float m_curSpeedFactor = 0.0f; // computed from m_speedFactor
     public List<MobPart> m_parts = new List<MobPart>();
@@ -62,7 +63,7 @@ public class Mobs : NetworkBehaviour
         }
 
         CalcLifeAndArmor();
-        JowLogger.Log($"{Time.fixedTime}s OnStartServer---");
+        JowLogger.Log($"{Time.fixedTime}s OnStartServer---{netId}, {m_mobType} with {m_life}pv");
     }
 
 
@@ -72,6 +73,16 @@ public class Mobs : NetworkBehaviour
         if (m_mobType != MobsType.MobMedic)
         {
             AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[3], transform.position);
+        }
+        else
+        {
+            // Change part0 mat for medic
+            MobPart part0 = m_parts[0];
+            Renderer rndr = part0.GetComponent<Renderer>();
+            if (rndr)
+            {
+                rndr.material = GameMan.s_instance.m_MedicMat;
+            }
         }
     }
 
@@ -111,7 +122,7 @@ public class Mobs : NetworkBehaviour
         m_armor = armor;
         m_curSpeedFactor = m_speedFactor + speed;
 
-        JowLogger.Log($"{Time.fixedTime}s {name} {netId} has {m_life}pv");
+        //JowLogger.Log($"{Time.fixedTime}s {name} {netId} has {m_life}pv");
 
         if (gameObject.activeSelf == true)
         {
@@ -171,6 +182,16 @@ public class Mobs : NetworkBehaviour
 
                 return;
             }
+            else
+            {
+                // We have a patient to take care of (heal only the main part for now)
+                MobPart part1 = m_patient.m_parts[0];
+                if (part1.m_curLifeP < 1.0f)
+                {
+                    part1.TakeDamage(-m_healingForce * Time.fixedDeltaTime, 0.0f);
+                    m_patient.CalcLifeAndArmor();
+                }
+            }
 
             float angle = Time.fixedTime * m_curSpeedFactor + m_animPhase;
             float heightAngle = angle * m_animPhase * 0.2f;
@@ -185,7 +206,8 @@ public class Mobs : NetworkBehaviour
     private void SetMobLife(float oldVal, float newVal)
     {
         //JowLogger.Log($"Updating {name}.{netId} life from {oldVal} to {newVal} now {m_life}");
-        if (m_mobType != MobsType.MobMedic)
+        //if (m_mobType != MobsType.MobMedic)
+        if (m_life < oldVal)
         {
             AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[5], transform.position);
         }
@@ -215,17 +237,40 @@ public class Mobs : NetworkBehaviour
     }
 
 
-    // Find a patient for a medic
+    // Find a patient for a medic (closest to the medic)
     public Mobs FindPatient()
     {
+        List<Mobs> possible = new List<Mobs>();
         foreach (Mobs target in GameMan.s_instance.m_wave.m_mobs)
         {
             if ((target.m_mobType != MobsType.MobMedic) && (target.m_life < 500.0f) && (target.m_life > 1.0f))
             {
-                m_patient = target;
-                return m_patient;
+                possible.Add(target);
             }
         }
+
+        if (possible.Count == 1)
+        {
+            m_patient = possible[0];
+            //JowLogger.Log($"{this.m_name} take {m_patient.m_name} as patient.");
+            return m_patient;
+        }
+        else if (possible.Count > 1)
+        {
+            float distSqr = float.MaxValue;
+            foreach (Mobs cl in possible)
+            {
+                float d = (cl.transform.position - transform.position).sqrMagnitude;
+                if (d < distSqr)
+                {
+                    distSqr = d;
+                    m_patient = cl;
+                }
+            }
+            //JowLogger.Log($"=====>>>>>>> {this.m_name} take {m_patient.m_name} as patient. {distSqr}m");
+            return m_patient;
+        }
+
         return null;
     }
 

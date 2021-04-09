@@ -19,22 +19,9 @@ public class PlayerControlMirror : NetworkBehaviour
     public int m_ammoCount = 100;
     [SyncVar(hook = nameof(SetAvatarLife))] public float m_curLife = 1000.0f;
     public float m_curHitAmount = 0.0f; // cumulated hits taken in current frame
-    public int m_wallCollAmount = 0; // Number of current collision with wall or wrecking
 
     public PillarMirror m_myPillar;
     public List<ElementsNet> m_myElems = new List<ElementsNet>();
-
-
-    // Add to the amount of collision with walls
-    public void AddWallDamage(int amount)
-    {
-        m_wallCollAmount += amount;
-
-        if (amount > 0)
-        {
-            AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[4], transform.position);
-        }
-    }
 
 
     public override void OnStartClient()
@@ -288,63 +275,6 @@ public class PlayerControlMirror : NetworkBehaviour
             hand.m_syncColor = m_syncColor;
             NetworkServer.Spawn(tool, this.gameObject); // Second param here set the authority
         }
-    }
-
-
-    private void FixedUpdate()
-    {
-        /*
-        if (m_renderer == null)
-        {
-            m_renderer = GetComponent<Renderer>();
-        }
-
-        Color curCol = m_renderer.material.color;
-        if (m_syncColor != curCol)
-        {
-            m_renderer.material.color = m_syncColor;
-            //JowLogger.Log($"========================= Seting color to {m_syncColor} @ {Time.fixedTime}s"); // JowTodo: Why is this called every frame ?
-        }
-        */
-
-        // Server part
-        if (NetworkManager.singleton.mode != NetworkManagerMode.Host)
-            return;
-
-        if (m_wallCollAmount > 0)
-        {
-            m_curLife -= m_wallCollAmount * Time.fixedDeltaTime * 500.0f;
-        }
-    }
-
-
-    // Update is called once per frame
-    void Update()
-    {
-        /*
-        if (GetComponent<NetworkIdentity>().hasAuthority)//make sure this is an object that we are controlling
-        {
-            GetComponent<Renderer>().material.color = c;//change color
-        }
-        else
-        {
-            Color curCol = GetComponent<Renderer>().material.color;
-            if (m_syncColor != curCol)
-            {
-                curCol = m_syncColor;
-            }
-        }
-        */
-
-        /*
-        Color curCol = m_renderer.material.color;
-        if (m_syncColor != curCol)
-        {
-            //curCol = m_syncColor;
-            m_renderer.material.color = m_syncColor;
-            JowLogger.Log($"========================= Seting color to {m_syncColor} @ {Time.fixedTime}s");
-        }
-        */
     }
 
 

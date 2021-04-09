@@ -290,7 +290,7 @@ MonoBehaviour:
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
-  m_FillAmount: 0.050878815
+  m_FillAmount: 0.043802425
   m_FillClockwise: 1
   m_FillOrigin: 2
   m_UseSpriteMesh: 0
@@ -768,6 +768,22 @@ MonoBehaviour:
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
   m_Version: 2
+--- !u!114 &467482178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 467482175}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df8e1d778abf442e4bec449c360e9e1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fadeTime: 2
+  fadeColor: {r: 0.01, g: 0.01, b: 0.01, a: 1}
+  fadeOnStart: 1
+  renderQueue: 5000
 --- !u!1 &625442056
 GameObject:
   m_ObjectHideFlags: 0
@@ -1053,7 +1069,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_logTitle: {fileID: 0}
   m_netMan: {fileID: 313177742}
-  m_minPlayerNb: 2
+  m_minPlayerNb: 1
   m_firstWaveDelay: 5
   m_allPlayers: []
   m_avatarHeight: 0.8
@@ -1073,6 +1089,7 @@ MonoBehaviour:
   m_maxElementCount: 4
   m_elementCubePrefab: {fileID: 7156512036141905571, guid: 68751d69f462bf64a8ba11e8e42500cb,
     type: 3}
+  m_MedicMat: {fileID: 0}
   m_audioSounds:
   - {fileID: 8300000, guid: 47aa5d5fc0657584aa9db9db5d029d84, type: 3}
   - {fileID: 8300000, guid: d3994560fb567c34a821fd9355c10eef, type: 3}
@@ -1080,6 +1097,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 5118a9e0edbe06b4087d99157028d98b, type: 3}
   - {fileID: 8300000, guid: d69debb483e26b2449ac8c1dc0b7c4f3, type: 3}
   - {fileID: 8300000, guid: 6940e836586bac2438fec0b2cc8a95ce, type: 3}
+  - {fileID: 8300000, guid: 1fbfb8085506e03438331ae83cefc013, type: 3}
 --- !u!4 &1120326616
 Transform:
   m_ObjectHideFlags: 0
@@ -1673,7 +1691,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_minimum: 0
   m_maximum: 100
-  m_cur: 5.0878816
+  m_cur: 4.3802423
   m_fill: {fileID: 174363519}
   m_fillColour: {r: 1, g: 0.10849059, b: 0.36393267, a: 1}
 --- !u!114 &1433800531

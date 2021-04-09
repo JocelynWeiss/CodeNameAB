@@ -128,6 +128,7 @@ public class MobPart : MonoBehaviour
                 life = 0.0f;
             }
             float p = life / m_lifeAddon;
+            p = Mathf.Clamp(p, 0.0f, 1.0f);
             m_curLifeP = p;
         }
     }

@@ -7,10 +7,15 @@ public class WaveClass
 {
     public int m_deathNb = 0;
     public List<Mobs> m_mobs = new List<Mobs>();
+    Random.State m_curRndState;
 
 
     public WaveClass()
     {
+        Random.State rndState = Random.state;
+        Random.InitState(666);
+        m_curRndState = Random.state;
+        Random.state = rndState;
     }
 
 
@@ -39,59 +44,30 @@ public class WaveClass
 
         // Save random state
         Random.State rndState = Random.state;
-        Random.InitState(666);
-        //hint = 5;
+        Random.state = m_curRndState;
+        //hint = 9;
 
-        int modulo = 0;
-        //Vector3 pillarPos = GameMan.s_instance.GetPillar().transform.position;
         foreach (GameObject pillar in GameMan.s_instance.GetPillarPool())
         {
             Vector3 pillarPos = pillar.transform.position;
 
-            Vector2 onCircle = Random.insideUnitCircle; // on the circle around pillar at some distance
-            onCircle.Normalize();
-            //JowLogger.Log($"--------------------------------onCircle {onCircle}");
-            if (modulo % 2 == 0)
-            {
-                onCircle *= 5.0f;
-            }
-            else
-            {
-                onCircle *= 10.0f;
-            }
-            //modulo++;
-            //JowLogger.Log($"onCircle {onCircle} magnitude {onCircle.magnitude}");
-            Vector3 spawnPoint2 = new Vector3(onCircle.x, pillarPos.y, onCircle.y);
-
+            Vector3 spawnPoint = Vector3.zero;
             Quaternion facing = Quaternion.identity;
-            facing = Quaternion.LookRotation(pillarPos - spawnPoint2);
-
-            spawnPoint2.y += 3.0f;
+            GetSpawningPoint(pillar, ref spawnPoint, ref facing);
 
             GameObject mobAPrefab = NetworkManager.singleton.spawnPrefabs[2];
-            if ((hint == 1) || (hint > 7))
+            if (hint == 1)
             {
-                float y = 0.75f + hint * 0.8f;
-                y = pillarPos.y + 3.0f;
-                //Vector3 spawnPoint = new Vector3(1.0f, y, 1.7f);
-                Vector3 spawnPoint = new Vector3(1.0f, y, 5.0f);
-                spawnPoint = spawnPoint2;
                 GameObject mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, facing);
-                //mobGo.transform.localScale *= 0.25f;
-                mobGo.SetActive(true);
                 Mobs mob = mobGo.GetComponent<Mobs>();
                 m_mobs.Add(mob);
                 NetworkServer.Spawn(mobGo);
             }
 
+            // Same as 1 but with an extra armor on it
             if (hint == 2)
             {
-                float y = pillarPos.y + 3.0f;
-                //Vector3 spawnPoint = new Vector3(2.2f, y, 1.7f);
-                Vector3 spawnPoint = new Vector3(2.2f, y, 5.0f);
-                spawnPoint = spawnPoint2;
                 GameObject mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, facing);
-                mobGo.SetActive(true);
                 Mobs mob = mobGo.GetComponent<Mobs>();
                 m_mobs.Add(mob);
 
@@ -103,37 +79,26 @@ public class WaveClass
                 NetworkServer.Spawn(mobGo);
             }
 
+            // Same as 1 but with a medic
             if (hint == 3)
             {
-                GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[3]; // Mob with plate armour
-                if (mobBPrefab)
-                {
-                    float y = pillarPos.y + 3.0f;
-                    //Vector3 spawnPoint = new Vector3(2.2f, y, 1.7f);
-                    Vector3 spawnPoint = new Vector3(2.2f, y, 5.0f);
-                    spawnPoint = spawnPoint2;
-                    GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, facing);
-                    mobGo.name = "NewMobB";
-                    Mobs mob = mobGo.GetComponent<Mobs>();
-                    m_mobs.Add(mob);
+                GameObject mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, facing);
+                Mobs mob = mobGo.GetComponent<Mobs>();
+                m_mobs.Add(mob);
+                NetworkServer.Spawn(mobGo);
 
-                    mob.CalcLifeAndArmor();
-
-                    NetworkServer.Spawn(mobGo);
-                }
+                // Spawn a medic mob to help him
+                AddMedicMob(spawnPoint);
             }
 
             if (hint == 4)
             {
-                GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[4]; // Mob with legs
+                GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[3]; // Mob with plate armour
                 if (mobBPrefab)
                 {
-                    float y = pillarPos.y + 3.0f;
-                    Vector3 spawnPoint = new Vector3(2.2f, y, 5.0f);
-                    spawnPoint = spawnPoint2;
                     GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, facing);
-                    mobGo.name = "NewMobC";
                     Mobs mob = mobGo.GetComponent<Mobs>();
+                    mobGo.name = "NewMobB" + mob.netId.ToString();
                     m_mobs.Add(mob);
 
                     mob.CalcLifeAndArmor();
@@ -142,38 +107,49 @@ public class WaveClass
                 }
             }
 
+            // Same as before but we throw a wrecking ball
             if (hint == 5)
             {
-                float y = pillarPos.y + 3.0f;
-                Vector3 spawnPoint = new Vector3(3.0f, y + 1.0f, 5.0f);
-                spawnPoint = spawnPoint2;
+                GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[3]; // Mob with plate armour
+                if (mobBPrefab)
+                {
+                    GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, facing);
+                    Mobs mob = mobGo.GetComponent<Mobs>();
+                    mobGo.name = "NewMobB" + mob.netId.ToString();
+                    m_mobs.Add(mob);
+
+                    mob.CalcLifeAndArmor();
+
+                    NetworkServer.Spawn(mobGo);
+                }
+            }
+
+            if (hint == 6)
+            {
+                GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[4]; // Mob with legs
+                if (mobBPrefab)
+                {
+                    GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, facing);
+                    Mobs mob = mobGo.GetComponent<Mobs>();
+                    mobGo.name = "NewMobC" + mob.netId.ToString();
+                    m_mobs.Add(mob);
+
+                    mob.CalcLifeAndArmor();
+
+                    NetworkServer.Spawn(mobGo);
+                }
+            }
+
+            // 2 simple mobs
+            if (hint == 7)
+            {
                 GameObject mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, facing);
                 Mobs mob = mobGo.GetComponent<Mobs>();
                 m_mobs.Add(mob);
                 mob.CalcLifeAndArmor();
                 NetworkServer.Spawn(mobGo);
 
-                spawnPoint = new Vector3(0.0f, y, 6.0f);
-                //---
-                /*
-                onCircle = Random.insideUnitCircle; // on the circle around pillar at some distance
-                onCircle.Normalize();
-                if (modulo % 2 == 0)
-                {
-                    onCircle *= 5.0f;
-                }
-                else
-                {
-                    onCircle *= 10.0f;
-                }
-                //spawnPoint2 = new Vector3(onCircle.x + 1.0f, pillarPos.y + 2.0f, onCircle.y);
-                spawnPoint2 = new Vector3(onCircle.x, pillarPos.y, onCircle.y);
-                facing = Quaternion.LookRotation(pillarPos - spawnPoint2);
-                */
-                spawnPoint2.y += 2.0f;
-                spawnPoint = spawnPoint2;
-                //---
-
+                GetSpawningPoint(pillar, ref spawnPoint, ref facing);
                 mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, facing);
                 mob = mobGo.GetComponent<Mobs>();
                 m_mobs.Add(mob);
@@ -181,39 +157,18 @@ public class WaveClass
                 NetworkServer.Spawn(mobGo);
             }
 
-            if (hint == 6)
+            if (hint == 8)
             {
                 GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[3];
                 if (mobBPrefab)
                 {
-                    float y = pillarPos.y + 3.0f;
-                    Vector3 spawnPoint = new Vector3(0.0f, y, 5.0f);
-                    spawnPoint = spawnPoint2;
                     GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, facing);
                     Mobs mob = mobGo.GetComponent<Mobs>();
                     m_mobs.Add(mob);
                     mob.CalcLifeAndArmor();
                     NetworkServer.Spawn(mobGo);
 
-                    spawnPoint = new Vector3(3.0f, y + 1.0f, 5.0f);
-                    //---
-                    /*
-                    onCircle = Random.insideUnitCircle; // on the circle around pillar at some distance
-                    onCircle.Normalize();
-                    if (modulo % 2 == 0)
-                    {
-                        onCircle *= 5.0f;
-                    }
-                    else
-                    {
-                        onCircle *= 10.0f;
-                    }
-                    spawnPoint2 = new Vector3(onCircle.x, pillarPos.y + 2.0f, onCircle.y);
-                    facing = Quaternion.LookRotation(pillarPos - spawnPoint2);
-                    */
-                    spawnPoint2.y += 2.0f;
-                    spawnPoint = spawnPoint2;
-                    //---
+                    GetSpawningPoint(pillar, ref spawnPoint, ref facing);
                     mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, facing);
                     mob = mobGo.GetComponent<Mobs>();
                     m_mobs.Add(mob);
@@ -222,17 +177,14 @@ public class WaveClass
                 }
             }
 
-            if (hint == 7)
+            if (hint == 9)
             {
                 GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[3]; // Mob with plate armour
                 if (mobBPrefab)
                 {
-                    float y = pillarPos.y + 3.0f;
-                    Vector3 spawnPoint = new Vector3(0.0f, y, 5.0f);
-                    spawnPoint = spawnPoint2;
                     GameObject mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, facing);
-                    mobGo.name = "NewMobB";
                     Mobs mob = mobGo.GetComponent<Mobs>();
+                    mobGo.name = "NewMobB" + mob.netId.ToString();
                     m_mobs.Add(mob);
 
                     mob.CalcLifeAndArmor();
@@ -243,29 +195,10 @@ public class WaveClass
                 GameObject mobCPrefab = NetworkManager.singleton.spawnPrefabs[4]; // Mob with legs
                 if (mobCPrefab)
                 {
-                    float y = pillarPos.y + 3.0f;
-                    Vector3 spawnPoint = new Vector3(3.0f, y, 5.0f);
-                    //---
-                    /*
-                    onCircle = Random.insideUnitCircle; // on the circle around pillar at some distance
-                    onCircle.Normalize();
-                    if (modulo % 2 == 0)
-                    {
-                        onCircle *= 5.0f;
-                    }
-                    else
-                    {
-                        onCircle *= 10.0f;
-                    }
-                    spawnPoint2 = new Vector3(onCircle.x, pillarPos.y + 2.0f, onCircle.y);
-                    facing = Quaternion.LookRotation(pillarPos - spawnPoint2);
-                    */
-                    spawnPoint2.y += 2.0f;
-                    spawnPoint = spawnPoint2;
-                    //---
+                    GetSpawningPoint(pillar, ref spawnPoint, ref facing);
                     GameObject mobGo = GameObject.Instantiate(mobCPrefab, spawnPoint, facing);
-                    mobGo.name = "NewMobC";
                     Mobs mob = mobGo.GetComponent<Mobs>();
+                    mobGo.name = "NewMobC" + mob.netId.ToString();
                     m_mobs.Add(mob);
 
                     mob.CalcLifeAndArmor();
@@ -274,19 +207,64 @@ public class WaveClass
                 }
             }
 
-            modulo++;
+            // A+medic + armour + legs
+            if (hint > 9)
+            {
+                GameObject mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, facing);
+                Mobs mob = mobGo.GetComponent<Mobs>();
+                m_mobs.Add(mob);
+                mob.CalcLifeAndArmor();
+                NetworkServer.Spawn(mobGo);
+
+                AddMedicMob(spawnPoint);
+
+                GameObject mobBPrefab = NetworkManager.singleton.spawnPrefabs[3]; // Mob with plate armour
+                if (mobBPrefab)
+                {
+                    GetSpawningPoint(pillar, ref spawnPoint, ref facing);
+                    mobGo = GameObject.Instantiate(mobBPrefab, spawnPoint, facing);
+                    mob = mobGo.GetComponent<Mobs>();
+                    mobGo.name = "NewMobB" + mob.netId.ToString();
+                    m_mobs.Add(mob);
+
+                    mob.CalcLifeAndArmor();
+
+                    NetworkServer.Spawn(mobGo);
+                }
+
+                GameObject mobCPrefab = NetworkManager.singleton.spawnPrefabs[4]; // Mob with legs
+                if (mobCPrefab)
+                {
+                    GetSpawningPoint(pillar, ref spawnPoint, ref facing);
+                    mobGo = GameObject.Instantiate(mobCPrefab, spawnPoint, facing);
+                    mob = mobGo.GetComponent<Mobs>();
+                    mobGo.name = "NewMobC" + mob.netId.ToString();
+                    m_mobs.Add(mob);
+
+                    mob.CalcLifeAndArmor();
+
+                    NetworkServer.Spawn(mobGo);
+                }
+            }
         }
 		
-        // Add medics
-        if ((hint == 999) || (hint > 7))
-		{
-			AddMedicMob();
-			AddMedicMob();
-			AddMedicMob();
-		}
-
+        m_curRndState = Random.state;
         // restore random state
         Random.state = rndState;
+    }
+
+
+    void GetSpawningPoint(GameObject from, ref Vector3 point, ref Quaternion orientation)
+    {
+        float angle = Random.Range(0.0f, 90.0f) - 45.0f;
+        //JowLogger.Log($"----------------------Spawning at random {angle}...");
+        Quaternion rot = Quaternion.AngleAxis(angle, from.transform.up);
+        point = from.transform.position + (rot * from.transform.forward).normalized * 5.0f;
+
+        orientation = Quaternion.LookRotation(from.transform.position - point);
+
+        float h = Random.Range(1.0f, 3.0f);
+        point.y += h;
     }
 
 
@@ -303,14 +281,13 @@ public class WaveClass
     }
 
 
-    // Just add one medic mob JOWIP
-    public void AddMedicMob()
+    // Just add one medic mob
+    public void AddMedicMob(Vector3 pos = new Vector3())
     {
-        JowLogger.Log($"{Time.fixedTime}s Adding one Medic");
+        JowLogger.Log($"{Time.fixedTime}s Adding one Medic at {pos}");
 
         GameObject mobAPrefab = NetworkManager.singleton.spawnPrefabs[2];
-        Vector3 spawnPoint = new Vector3(0.0f, 0.0f, 0.0f);
-        GameObject mobGo = GameObject.Instantiate(mobAPrefab, spawnPoint, Quaternion.identity);
+        GameObject mobGo = GameObject.Instantiate(mobAPrefab, pos, Quaternion.identity);
         mobGo.transform.localScale *= 0.5f;
         Mobs mob = mobGo.GetComponent<Mobs>();
         mob.ChangeType(MobsType.MobMedic, Random.Range(0.0f, Mathf.PI * 2.0f));

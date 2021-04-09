@@ -13,8 +13,11 @@ public class WreckingBallMirror : NetworkBehaviour
     [SyncVar(hook = nameof(SetBallColour))]
     public Color m_syncColor = Color.black;
     public float m_speedFactor = 0.8f;
+    public float m_damages = 300.0f; // damage per fixedDeltaTime
     Renderer m_renderer;
     float m_enterTime = 0.0f;
+    List<PlayerControlMirror> m_plrColliding = new List<PlayerControlMirror>(); // Server only
+    public AudioSource m_audio;
 
 
     public override void OnStartClient()
@@ -25,7 +28,11 @@ public class WreckingBallMirror : NetworkBehaviour
             Debug.LogError($"{gameObject} OnStartClient @ {Time.fixedTime}s cannot initialize renderer.");
         }
 
-        AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[3], transform.position);
+        m_audio.spatialize = true;
+        m_audio.transform.SetParent(gameObject.transform);
+
+        m_audio.clip = GameMan.s_instance.m_audioSounds[3];
+        m_audio.Play();
     }
 
 
@@ -33,6 +40,20 @@ public class WreckingBallMirror : NetworkBehaviour
     {
         JowLogger.Log($"xxx XXX xxx OnStopClient --- {gameObject} --- netId {netId}");
         base.OnStopClient();
+    }
+
+
+    public override void OnStartServer()
+    {
+        m_plrColliding.Clear();
+        base.OnStartServer();
+    }
+
+
+    public override void OnStopServer()
+    {
+        m_plrColliding.Clear();
+        base.OnStopServer();
     }
 
 
@@ -65,6 +86,11 @@ public class WreckingBallMirror : NetworkBehaviour
         {
             m_syncColor = Color.red;
         }
+
+        foreach (PlayerControlMirror plr in m_plrColliding)
+        {
+            plr.m_curLife -= Time.fixedDeltaTime * m_damages;
+        }
     }
 
 
@@ -93,12 +119,16 @@ public class WreckingBallMirror : NetworkBehaviour
         if (player != null)
         {
             m_enterTime = Time.time;
+            m_audio.clip = GameMan.s_instance.m_audioSounds[6];
+            m_audio.Play();
 
             if (NetworkManager.singleton.mode != NetworkManagerMode.Host)
                 return;
 
-            //player.m_curLife -= 500f;
-            player.AddWallDamage(1);
+            if (m_plrColliding.Contains(player) == false)
+            {
+                m_plrColliding.Add(player);
+            }
         }
     }
 
@@ -112,11 +142,19 @@ public class WreckingBallMirror : NetworkBehaviour
         if (player != null)
         {
             m_enterTime = 0.0f;
+            if (m_audio.isPlaying == true)
+            {
+                m_audio.Stop();
+            }
 
             if (NetworkManager.singleton.mode != NetworkManagerMode.Host)
                 return;
 
-            player.AddWallDamage(-1);
+            if (m_plrColliding.Contains(player))
+            {
+                m_plrColliding.Remove(player);
+            }
+
             Invoke(nameof(DestroySelf), 0.5f);
         }
     }
