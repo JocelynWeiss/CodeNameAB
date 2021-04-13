@@ -62,6 +62,8 @@ public class GameMan : MonoBehaviour
     private float m_leftRPS = 1.0f; // Round per seconds (seconds between 2 shots)
     private bool m_doubleShot = false;
     public OVRCameraRig m_cameraRig;
+    [HideInInspector] public OVRScreenFade m_fader;
+    [HideInInspector] public CamShakeScript m_shaker;
 
     public Material[] m_CubesElemMats = new Material[4];
     public int m_maxElementCount = 4; // Max element per player
@@ -132,6 +134,14 @@ public class GameMan : MonoBehaviour
         {
             Debug.LogError($"GameMan Init Cannot find hands !");
         }
+
+        m_fader = m_cameraRig.GetComponentInChildren<OVRScreenFade>();
+        if (m_fader == null)
+        {
+            Debug.LogError($"Make sure OVRScreenFade is attached to cameraRig->TrackingSpace->CenterEyeAnchor");
+        }
+
+        m_shaker = GetComponent<CamShakeScript>();
 
         LoadElementsMats();
         LoadMedicMat();
@@ -752,14 +762,14 @@ public class GameMan : MonoBehaviour
 
         if (m_myAvatar)
         {
-            // Have this script attached to cameraRig->TrackingSpace->CenterEyeAnchor
-            OVRScreenFade fader = m_cameraRig.GetComponentInChildren<OVRScreenFade>();
-            if (fader)
+            if (m_fader)
             {
-                fader.fadeColor = Color.red;
-                //float f = (1.0f - m_playerLifeBar.m_fill.fillAmount);
-                float f = (0.5f - m_playerLifeBar.m_fill.fillAmount) + 0.25f;
-                fader.SetFadeLevel(f);
+                float f = 0.0f;
+                if (m_nextWaveDate == 0.0f) // Only during a wave
+                {
+                    f = Mathf.Lerp(0.0f, 0.75f, 0.5f - m_playerLifeBar.m_fill.fillAmount);
+                }
+                m_fader.SetFadeLevel(f);
             }
         }
 
@@ -921,6 +931,23 @@ public class GameMan : MonoBehaviour
             {
                 JowLogger.Log($"Calling cmd from {plr.netId}... plr.hasAuthority {plr.hasAuthority}");
                 plr.CmdTest();
+            }
+            */
+
+            // Test cam shaking
+            /*
+            if (m_shaker)
+            {
+                //m_shaker.Shake1(m_cameraRig.transform, 3.0f); // wobble
+
+                if (m_shaker.m_shaking)
+                {
+                    m_shaker.StopShaking(0.5f);
+                }
+                else
+                {
+                    m_shaker.Shake2(m_cameraRig.transform, 30.0f);
+                }
             }
             */
         }

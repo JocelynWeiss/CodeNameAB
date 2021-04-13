@@ -2,7 +2,7 @@
  Testing Mirror  
 This is using Unity 2019.4.14f1  
 
-#### Version 0.241 
+#### Version 0.242
 
 
 ---------------------------------------------
@@ -57,7 +57,12 @@ Sync hands.
 Fix client grabbing peer element.  
 ### Version 0.24  
 Adds giant wrecking balls.  
-##### Version 0.241  
+##### Version 0.241
 Adds fade to red with life.  
+##### Version 0.242
+Adds camera shake when colliding with a wrecking ball.  
+##### Version 0.243
+Adds dropped bonus to catch. **WIP**  
+
 
 

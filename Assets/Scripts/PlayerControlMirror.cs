@@ -322,6 +322,12 @@ public class PlayerControlMirror : NetworkBehaviour
         JowLogger.Log($"Player {netId} Next wave date {_AODate} = {System.DateTime.FromOADate(_AODate)}");
         GameMan.s_instance.m_nextWaveDate = _AODate;
 
+        if (GameMan.s_instance.m_fader)
+        {
+            GameMan.s_instance.m_fader.fadeColor = Color.red;
+            GameMan.s_instance.m_fader.SetFadeLevel(0.0f);
+        }
+
         if (_AODate > 0.0)
         {
             if (hasAuthority)

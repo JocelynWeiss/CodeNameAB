@@ -290,7 +290,7 @@ MonoBehaviour:
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
-  m_FillAmount: 0.043802425
+  m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 2
   m_UseSpriteMesh: 0
@@ -1048,6 +1048,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1120326616}
   - component: {fileID: 1120326615}
+  - component: {fileID: 1120326617}
   m_Layer: 0
   m_Name: GameMan
   m_TagString: Untagged
@@ -1069,7 +1070,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_logTitle: {fileID: 0}
   m_netMan: {fileID: 313177742}
-  m_minPlayerNb: 1
+  m_minPlayerNb: 2
   m_firstWaveDelay: 5
   m_allPlayers: []
   m_avatarHeight: 0.8
@@ -1081,6 +1082,8 @@ MonoBehaviour:
   m_playerLifeBar: {fileID: 1433800530}
   m_playerInfoText: {fileID: 1930667003}
   m_cameraRig: {fileID: 0}
+  m_fader: {fileID: 0}
+  m_shaker: {fileID: 0}
   m_CubesElemMats:
   - {fileID: 0}
   - {fileID: 0}
@@ -1113,6 +1116,24 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1120326617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1120326614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7f67a4a20b9f3d4f93ac01da0d37d22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_wobblePace: 1
+  m_smooth: 10
+  m_amplitudePos: {x: 0.3, y: 0.3, z: 0}
+  m_amplitudeRot: {x: 0, y: 0, z: 0}
+  m_wobbling: 0
+  m_shaking: 0
 --- !u!1 &1145444333
 GameObject:
   m_ObjectHideFlags: 0
@@ -1691,7 +1712,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_minimum: 0
   m_maximum: 100
-  m_cur: 4.3802423
+  m_cur: 142.52553
   m_fill: {fileID: 174363519}
   m_fillColour: {r: 1, g: 0.10849059, b: 0.36393267, a: 1}
 --- !u!114 &1433800531
