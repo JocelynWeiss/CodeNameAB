@@ -298,15 +298,17 @@ public class PlayerControlMirror : NetworkBehaviour
         GameMan.s_instance.SetPlayerInfoText();
         GameMan.s_instance.m_logTitle.text = "";
 
+        // No more elements at start
+        /*
         if ((newWaveNb > 0) && (m_myElems.Count < GameMan.s_instance.m_maxElementCount))
         {
-            //if (GameMan.s_instance.m_netMan.mode == NetworkManagerMode.Host)
             if (hasAuthority)
             {
                 JowLogger.Log($"netId {netId}, asking to spawn a new element...");
                 LoadElements(netId);
             }
         }
+        */
 
         if (hasAuthority)
         {
@@ -345,7 +347,8 @@ public class PlayerControlMirror : NetworkBehaviour
             int count = m_myElems.Count + 1;
             //Vector3 pos = m_myPillar.transform.position + new Vector3(-1.2f, 2.0f + ((float)count * 0.2f), 0.0f);
             //pos += m_myPillar.transform.forward * 0.8f;
-            Vector3 pos = m_myPillar.transform.position + new Vector3(-1.0f, 2.25f + ((float)count * 0.2f), 0.0f);
+            //Vector3 pos = m_myPillar.transform.position + new Vector3(-1.0f, 2.25f + ((float)count * 0.2f), 0.0f);
+            Vector3 pos = m_myPillar.transform.position + new Vector3(-0.8f, 2.25f + ((float)count * 0.2f), 0.0f);
             pos += m_myPillar.transform.forward * 0.5f;
             GameObject newCube = Instantiate(elemPrefab, pos, Quaternion.identity);
             newCube.transform.position = pos + new Vector3(0.0f, 0.0f, 0.0f);
@@ -355,6 +358,22 @@ public class PlayerControlMirror : NetworkBehaviour
             elem.m_ownerId = _netId;
             //NetworkServer.Spawn(newCube);
             NetworkServer.Spawn(newCube, this.gameObject); // Client authoritative
+        }
+    }
+
+
+    [Command] public void SpawnBonus(uint _netId, Vector3 pos, Vector3 force)
+    {
+        int prefabIdx = 9;
+        GameObject elemPrefab = NetworkManager.singleton.spawnPrefabs[prefabIdx];
+        if (elemPrefab)
+        {
+            GameObject go = Instantiate(elemPrefab, pos, Quaternion.identity);
+            BonusNet elem = go.GetComponent<BonusNet>();
+            int matId = Random.Range(0, 4);
+            elem.ChangeType((Elements)matId, GameMan.s_instance.m_CubesElemMats[matId]);
+            NetworkServer.Spawn(go, this.gameObject); // Client authoritative
+            elem.AddForce(force);
         }
     }
 
@@ -378,7 +397,8 @@ public class PlayerControlMirror : NetworkBehaviour
 
             //Vector3 pos = m_myPillar.transform.position + new Vector3(-1.2f, 2.0f + ((float)count * 0.2f), 0.0f);
             //pos += m_myPillar.transform.forward * 0.8f;
-            Vector3 pos = m_myPillar.transform.position + new Vector3(-1.0f, 2.25f + ((float)count * 0.2f), 0.0f);
+            //Vector3 pos = m_myPillar.transform.position + new Vector3(-1.0f, 2.25f + ((float)count * 0.2f), 0.0f);
+            Vector3 pos = m_myPillar.transform.position + new Vector3(-0.8f, 2.25f + ((float)count * 0.2f), 0.0f);
             pos += m_myPillar.transform.forward * 0.5f;
             elem.transform.position = pos;
             elem.gameObject.SetActive(true);

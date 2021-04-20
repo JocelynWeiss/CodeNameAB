@@ -9,6 +9,7 @@ using OculusSampleFramework;
 // The game manager using mirror networking services...
 //JowNext: Add a game over if no more life
 // Hold a list of players affected by walls in wreckingball class to compute damages on the server.
+// Trigger Bonuses
 
 
 
@@ -32,6 +33,7 @@ public class GameMan : MonoBehaviour
     public NetworkManager m_netMan;
     public int m_minPlayerNb = 2; // Minimum player number required to launch first wave
     public float m_firstWaveDelay = 10.0f; // seconds before launching first wave
+    public float m_endOfWaveDelay = 8.0f; // seconds the game is still running after all mobs death.
 
     public List<PlayerControlMirror> m_allPlayers = new List<PlayerControlMirror>();
     private float m_lastConnected = 0.0f;
@@ -70,6 +72,8 @@ public class GameMan : MonoBehaviour
     public GameObject m_elementCubePrefab;
     //List<ElementsScript> m_elemCubes = new List<ElementsScript>(); // Deprecated
 
+    List<BonusNet> m_allBonuses = new List<BonusNet>();
+
     public Material m_MedicMat;
 
     List<WreckingBallMirror> m_wreckings = new List<WreckingBallMirror>(); // Server Side only
@@ -80,6 +84,7 @@ public class GameMan : MonoBehaviour
     //public OVR.SoundFXRef testSound2;
     [InspectorNote("Audio Sounds Setup")]
     public List<AudioClip> m_audioSounds;
+    bool[] m_countDownSound = new bool[5];
 
 
     public List<GameObject> GetPillarPool()
@@ -147,6 +152,17 @@ public class GameMan : MonoBehaviour
         LoadMedicMat();
 
         m_wave = new WaveClass();
+
+        ResetCountDownSounds();
+    }
+
+
+    void ResetCountDownSounds()
+    {
+        for (int i = 0; i < m_countDownSound.Length; i++)
+        {
+            m_countDownSound[i] = false;
+        }
     }
 
 
@@ -200,6 +216,25 @@ public class GameMan : MonoBehaviour
             {
                 dist = d;
                 ret = go;
+            }
+        }
+
+        return ret;
+    }
+
+
+    public PlayerControlMirror GetClosestPlayer(Vector3 _pos)
+    {
+        PlayerControlMirror ret = null;
+        float dist = float.MaxValue;
+
+        foreach (PlayerControlMirror plr in m_allPlayers)
+        {
+            float d = (_pos - plr.transform.position).magnitude;
+            if (d < dist)
+            {
+                dist = d;
+                ret = plr;
             }
         }
 
@@ -327,6 +362,8 @@ public class GameMan : MonoBehaviour
             //*/
         }
 
+        ResetCountDownSounds();
+
         SetPlayerInfoText();
     }
 
@@ -422,6 +459,21 @@ public class GameMan : MonoBehaviour
     }
 
 
+    public void RegisterBonus(BonusNet bonus)
+    {
+        m_allBonuses.Add(bonus);
+    }
+
+
+    public void UnregisterBonus(BonusNet bonus)
+    {
+        if (m_allBonuses.Contains(bonus))
+        {
+            m_allBonuses.Remove(bonus);
+        }
+    }
+
+
     // Return this player pillar
     public GameObject GetPillar()
     {
@@ -435,13 +487,24 @@ public class GameMan : MonoBehaviour
         // A new mob is dead
         m_wave.MobIsDead(deadMob);
 
-        if (m_wave.m_deathNb == m_wave.m_mobs.Count)
-        {
-            WaveEnded();
-        }
-
         // No more patient for medics
         ReleasePatients(deadMob);
+
+        // Spawn a bonus
+        /*
+        if (deadMob.m_mobType != MobsType.MobMedic)
+        {
+            Vector3 f = GetClosestPlayer(deadMob.transform.position).transform.position;
+            f = (f - deadMob.transform.position).normalized;
+            SpawnBonus(m_myAvatar, deadMob.transform.position, f);
+        }
+        */
+
+        // Check for the end of the wave
+        if (m_wave.m_deathNb == m_wave.m_mobs.Count)
+        {
+            StartCoroutine(WaveEndDelayed(m_endOfWaveDelay));
+        }
     }
 
 
@@ -483,6 +546,13 @@ public class GameMan : MonoBehaviour
             NetworkServer.Destroy(wrk.gameObject);
         }
         m_wreckings.Clear();
+
+        // Destroy remaining bonuses
+        foreach (BonusNet bonus in m_allBonuses)
+        {
+            NetworkServer.Destroy(bonus.gameObject);
+        }
+        m_allBonuses.Clear();
     }
 
 
@@ -521,7 +591,51 @@ public class GameMan : MonoBehaviour
             double d = m_nextWaveDate - System.DateTime.Now.ToOADate();
             d *= 100000.0;
             m_playerInfoText.text = $"Next Wave in {d.ToString("f0")}s";
+
+            if ((d <= 5.0) && (d > 4.0) && (m_countDownSound[4] == false))
+            {
+                m_countDownSound[4] = true;
+                AudioSource.PlayClipAtPoint(m_audioSounds[7], m_myAvatar.transform.position);
+            }
+            else if ((d <= 4.0) && (d > 3.0) && (m_countDownSound[3] == false))
+            {
+                m_countDownSound[3] = true;
+                AudioSource.PlayClipAtPoint(m_audioSounds[7], m_myAvatar.transform.position);
+            }
+            else if ((d <= 3.0) && (d > 2.0) && (m_countDownSound[2] == false))
+            {
+                m_countDownSound[2] = true;
+                AudioSource.PlayClipAtPoint(m_audioSounds[7], m_myAvatar.transform.position);
+            }
+            else if ((d <= 2.0) && (d > 1.0) && (m_countDownSound[1] == false))
+            {
+                m_countDownSound[1] = true;
+                AudioSource.PlayClipAtPoint(m_audioSounds[7], m_myAvatar.transform.position);
+            }
+            else if ((d <= 1.0) && (d > 0.0) && (m_countDownSound[0] == false))
+            {
+                m_countDownSound[0] = true;
+                AudioSource.PlayClipAtPoint(m_audioSounds[7], m_myAvatar.transform.position);
+            }
         }
+
+        //---Stop bonuses when close to player---
+        foreach (BonusNet b in m_allBonuses)
+        {
+            if (b.m_used == false)
+            {
+                float dist = (m_myAvatar.transform.position - b.transform.position).magnitude;
+                if (dist < 0.5f)
+                {
+                    Rigidbody rb = b.GetComponent<Rigidbody>();
+                    //rb.velocity = Vector3.zero;
+                    //rb.angularVelocity = Vector3.zero;
+                    rb.drag = 1.0f;
+                    rb.angularDrag = 1.0f;
+                }
+            }
+        }
+        //---
 
 #if UNITY_ANDROID
         // Update local player head position from headset ... Setup Henigma
@@ -831,6 +945,9 @@ public class GameMan : MonoBehaviour
             }
         }
 
+        // Display bonus rot
+        CheckGrabbedBonus();
+
         if (Input.GetKeyUp(KeyCode.Space))
         {
             // ...
@@ -853,6 +970,37 @@ public class GameMan : MonoBehaviour
                 m_myAvatar.Jump();
             }
         }
+
+        // Activate first unused bonus
+        if (Input.GetKeyUp(KeyCode.B))
+        {
+            foreach (BonusNet b in m_allBonuses)
+            {
+                if (b.m_used == false)
+                {
+                    b.GetColorGrabbable().m_lastGrabbed = Time.time;
+                    //CheckGrabbedBonus();
+                    b.AddAngularVelocity(new Vector3(0.0f, 5.0f, 0.0f));
+                    b.GetColorGrabbable().Highlight = true;
+                    b.GetColorGrabbable().UpdateColor();
+                    break;
+                }
+            }
+        }
+        /*
+        if (Input.GetKey(KeyCode.B))
+        {
+            foreach (BonusNet b in m_allBonuses)
+            {
+                if (b.m_used == false)
+                {
+                    b.GetColorGrabbable().m_lastGrabbed = Time.time;
+                    CheckGrabbedBonus();
+                    break;
+                }
+            }
+        }
+        */
 
         if (Input.GetKeyUp(KeyCode.C))
         {
@@ -886,6 +1034,18 @@ public class GameMan : MonoBehaviour
                     Quaternion q = m_myAvatar.transform.rotation;
                     TryFire(true, p, q, m_myAvatar.transform.right);
                 }
+            }
+        }
+
+        // Kill first alive mob in the list
+        if (Input.GetKeyUp(KeyCode.K))
+        {
+            foreach (Mobs mob in m_wave.m_mobs)
+            {
+                if (mob.KillMob() == false)
+                    continue;
+                else
+                    return;
             }
         }
 
@@ -950,6 +1110,14 @@ public class GameMan : MonoBehaviour
                 }
             }
             */
+
+            if (NetworkManager.singleton.mode == NetworkManagerMode.Host)
+            {
+                Vector3 pos = Vector3.zero;
+                Mobs mob = m_wave.m_mobs[0];
+                Vector3 f = (m_myAvatar.transform.position - mob.transform.position).normalized;
+                SpawnBonus(m_myAvatar, mob.transform.position, f);
+            }
         }
         
         // Inverse view for testing
@@ -997,7 +1165,7 @@ public class GameMan : MonoBehaviour
 
         if (Input.GetKeyUp(KeyCode.End))
         {
-            WaveEnded();
+            StartCoroutine(WaveEndDelayed(m_endOfWaveDelay));
         }
 
         if (Input.GetKey(KeyCode.Keypad6))
@@ -1217,6 +1385,16 @@ public class GameMan : MonoBehaviour
     }
 
 
+    public void TriggerBonus()
+    {
+        if (m_myAvatar.hasAuthority)
+        {
+            JowLogger.Log($"netId {m_myAvatar.netId}, asking to spawn a new element...");
+            m_myAvatar.LoadElements(m_myAvatar.netId);
+        }
+    }
+
+
     // Spawn a big wrecking ball to aim to one player. (ServerSide only)
     public void SpawnWreckingBall(PlayerControlMirror plr)
     {
@@ -1240,6 +1418,34 @@ public class GameMan : MonoBehaviour
         //ball.m_speedFactor = 0.01f;
         m_wreckings.Add(ball);
         NetworkServer.Spawn(go);
+    }
+
+
+    // Check grabbed bonus
+    void CheckGrabbedBonus()
+    {
+        foreach (BonusNet b in m_allBonuses)
+        {
+            if (b.m_used == false)
+            {
+                float lastGrabbed = b.GetColorGrabbable().m_lastGrabbed;
+                if (lastGrabbed > 0.0f)
+                {
+                    Rigidbody rb = b.GetComponent<Rigidbody>();
+                    m_logTitle.text = $"{b.netId} r: {rb.angularVelocity.magnitude}";
+                    //JowLogger.Log($"Grabbed {b.netId} rot: {rb.angularVelocity.magnitude}");
+                    break;
+                }
+            }
+        }
+    }
+
+
+    public void SpawnBonus(PlayerControlMirror plr, Vector3 pos, Vector3 forward)
+    {
+        //m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 25.0f);
+        //m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 50.0f);
+        m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 100.0f);
     }
 
 
@@ -1283,5 +1489,12 @@ public class GameMan : MonoBehaviour
 
         JowLogger.Log($"aAa --- Trying to destroy {elem.netId} elem.hasAuthority {elem.hasAuthority} mode {NetworkManager.singleton.mode}, isServer {m_myAvatar.isServer}");
         m_myAvatar.DestroyElem(elem.netId, elem.m_ownerId);
+    }
+
+
+    IEnumerator WaveEndDelayed(float waitSec)
+    {
+        yield return new WaitForSeconds(waitSec);
+        WaveEnded();
     }
 }

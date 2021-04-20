@@ -21,6 +21,7 @@ public class Mobs : NetworkBehaviour
     Mobs m_patient = null; // For medic, their actual patient
     float m_animPhase = 0.0f; // So they are not all on the same path
 
+    int m_bonusSpawned = 0;
 
     
     public override void OnStartServer()
@@ -133,6 +134,18 @@ public class Mobs : NetworkBehaviour
                 GameMan.s_instance.MobIsDead(this);
                 UnspawnSelf();
             }
+
+            if ((m_life < 20.0f) && (m_mobType != MobsType.MobMedic))
+            {
+                if (m_bonusSpawned == 0)
+                {
+                    m_bonusSpawned++;
+                    PlayerControlMirror plr = GameMan.s_instance.GetClosestPlayer(transform.position);
+                    Vector3 f = plr.transform.position;
+                    f = (f - transform.position).normalized;
+                    GameMan.s_instance.SpawnBonus(plr, transform.position, f);
+                }
+            }
         }
 
         // A mob with its first (main) part at 0 life needs to be destroyed
@@ -199,6 +212,21 @@ public class Mobs : NetworkBehaviour
             radius = 2.0f + Mathf.Sin(m_animPhase + Time.fixedTime * m_curSpeedFactor * 0.1f);
             transform.position = m_patient.transform.position + new Vector3(Mathf.Cos(angle), Mathf.Cos(heightAngle) * Mathf.Sin(heightAngle), Mathf.Sin(angle)) * radius;
         }
+    }
+
+
+    // Put the main life part to 0 to kill this mob, return false if already dead
+    public bool KillMob()
+    {
+        if (m_parts.Count == 0)
+            return false;
+        MobPart mainPart = m_parts[0];
+        if (mainPart.m_curLifeP <= 0.0f)
+            return false;
+
+        mainPart.TakeDamage(mainPart.m_lifeAddon, mainPart.m_armorAddon);
+        CalcLifeAndArmor();
+        return true;
     }
 
 

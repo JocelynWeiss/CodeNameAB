@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4318143781954025887}
   - component: {fileID: 4318143781954025886}
   - component: {fileID: 4318143781954025881}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: LeftLeg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -126,7 +126,7 @@ GameObject:
   - component: {fileID: 4318143782361655748}
   - component: {fileID: 4318143782361655604}
   - component: {fileID: 4318143782361655595}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: LifePart
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -296,6 +296,7 @@ MonoBehaviour:
   m_name: 
   m_life: 0
   m_armor: 0
+  m_healingForce: 2
   m_speedFactor: 0.02
   m_curSpeedFactor: 0
   m_parts:
@@ -333,7 +334,7 @@ GameObject:
   - component: {fileID: 4318143783020395211}
   - component: {fileID: 4318143783020395210}
   - component: {fileID: 4318143783020395205}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: RighttLeg
   m_TagString: Untagged
   m_Icon: {fileID: 0}

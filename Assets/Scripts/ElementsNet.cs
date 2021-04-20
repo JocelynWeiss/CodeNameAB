@@ -126,9 +126,20 @@ public class ElementsNet : NetworkBehaviour
     {
         yield return new WaitForSeconds(waitSec);
 
+        m_grabbable.GrabEnd(Vector3.zero, Vector3.zero);
         Rigidbody rb = GetComponent<Rigidbody>();
         rb.isKinematic = false;
         rb.useGravity = true;
+    }
+
+
+    public void AddForce(Vector3 force)
+    {
+        Rigidbody rb = GetComponent<Rigidbody>();
+        rb.isKinematic = false;
+        rb.useGravity = false;
+        rb.AddForce(force);
+        rb.angularVelocity = Random.insideUnitSphere;
     }
 
 

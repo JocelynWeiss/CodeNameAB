@@ -69,6 +69,7 @@ MonoBehaviour:
   m_name: 
   m_life: 0
   m_armor: 0
+  m_healingForce: 2
   m_speedFactor: 0.15
   m_curSpeedFactor: 0
   m_parts:
@@ -105,7 +106,7 @@ GameObject:
   - component: {fileID: 43459308053802887}
   - component: {fileID: 43459308053802886}
   - component: {fileID: 43459308053802885}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: LifePart
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -218,7 +219,7 @@ GameObject:
   - component: {fileID: 6815970151397119993}
   - component: {fileID: 5694867376258395693}
   - component: {fileID: 6566938555205183568}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: ArmourPart
   m_TagString: Untagged
   m_Icon: {fileID: 0}

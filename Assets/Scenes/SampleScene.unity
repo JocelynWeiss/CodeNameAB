@@ -548,6 +548,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1986291140878450, guid: a87f0180d46fd334b9025d0314a0dc70, type: 3}
+      propertyPath: m_Layer
+      value: 11
+      objectReference: {fileID: 0}
     - target: {fileID: 4395200634295792, guid: a87f0180d46fd334b9025d0314a0dc70, type: 3}
       propertyPath: m_LocalScale.x
       value: 5
@@ -725,6 +729,7 @@ MonoBehaviour:
   - {fileID: 8870109761985513667, guid: 0810e12009a63f4498a17fe551ed43bb, type: 3}
   - {fileID: 7791026181210483131, guid: 3c40e8d5773854148ba8296b7ea86c92, type: 3}
   - {fileID: 537089942514433231, guid: 0ab8482d019c4a447a9232021db07d5c, type: 3}
+  - {fileID: 7156512036141905571, guid: b99595426223d0245b793246cbdd3fff, type: 3}
 --- !u!1 &467482175 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100002, guid: 126d619cf4daa52469682f85c1378b4a,
@@ -1072,6 +1077,7 @@ MonoBehaviour:
   m_netMan: {fileID: 313177742}
   m_minPlayerNb: 2
   m_firstWaveDelay: 5
+  m_endOfWaveDelay: 3
   m_allPlayers: []
   m_avatarHeight: 0.8
   m_upForce: 300
@@ -1101,6 +1107,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: d69debb483e26b2449ac8c1dc0b7c4f3, type: 3}
   - {fileID: 8300000, guid: 6940e836586bac2438fec0b2cc8a95ce, type: 3}
   - {fileID: 8300000, guid: 1fbfb8085506e03438331ae83cefc013, type: 3}
+  - {fileID: 8300000, guid: 4bb07100c83b0be429cec7ba18fe51fc, type: 3}
+  - {fileID: 8300000, guid: d716392289ac6764994885f5821f7d7b, type: 3}
 --- !u!4 &1120326616
 Transform:
   m_ObjectHideFlags: 0
