@@ -62,7 +62,8 @@ public class BonusNet : NetworkBehaviour
                 //m_grabbable.m_lastGrabbed = 0.0f; // Jow: don't force this is still being grabbed
                 if (m_rb)
                 {
-                    if (m_rb.angularVelocity.magnitude > 10.0f)
+                    //if (m_rb.angularVelocity.magnitude > 10.0f)
+                    if (m_rb.angularVelocity.magnitude > 30.0f)
                     {
                         TriggerBonus2();
                     }
@@ -93,7 +94,12 @@ public class BonusNet : NetworkBehaviour
 
         AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[8], transform.position);
         m_used = true;
-        m_grabbable.GrabEnd(Vector3.zero, Vector3.zero);
+        //m_grabbable.GrabEnd(Vector3.zero, Vector3.zero);
+        //m_grabbable.GrabEnd(Vector3.zero, Vector3.zero);
+        //m_rb.angularVelocity = Vector3.zero;
+        //m_rb.isKinematic = true;
+        m_grabbable.ForceRelease();
+
         GameMan.s_instance.TriggerBonus();
         StartCoroutine(DelayedFall(0.0f)); // Put it away from the grab so it will be released
 

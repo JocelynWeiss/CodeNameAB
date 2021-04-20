@@ -122,7 +122,7 @@ public class WreckingBallMirror : NetworkBehaviour
             m_audio.clip = GameMan.s_instance.m_audioSounds[6];
             m_audio.Play();
 
-            GameMan.s_instance.m_shaker.Shake2(GameMan.s_instance.m_cameraRig.transform, 30.0f);
+            GameMan.s_instance.m_shaker.Shake2(GameMan.s_instance.m_cameraRig.transform, 8.0f);
 
             if (NetworkManager.singleton.mode != NetworkManagerMode.Host)
                 return;

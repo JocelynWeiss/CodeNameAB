@@ -1075,7 +1075,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_logTitle: {fileID: 0}
   m_netMan: {fileID: 313177742}
-  m_minPlayerNb: 2
+  m_minPlayerNb: 1
   m_firstWaveDelay: 5
   m_endOfWaveDelay: 3
   m_allPlayers: []
@@ -1138,7 +1138,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_wobblePace: 1
   m_smooth: 10
-  m_amplitudePos: {x: 0.3, y: 0.3, z: 0}
+  m_amplitudePos: {x: 0.5, y: 0.3, z: 0}
   m_amplitudeRot: {x: 0, y: 0, z: 0}
   m_wobbling: 0
   m_shaking: 0

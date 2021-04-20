@@ -882,6 +882,16 @@ public class GameMan : MonoBehaviour
                 if (m_nextWaveDate == 0.0f) // Only during a wave
                 {
                     f = Mathf.Lerp(0.0f, 0.75f, 0.5f - m_playerLifeBar.m_fill.fillAmount);
+
+                    // Death if any player is dead
+                    foreach (PlayerControlMirror plr in m_allPlayers)
+                    {
+                        float lifeP = plr.m_curLife / m_playerLifeBar.m_maximum;
+                        if (lifeP < 0.08f)
+                        {
+                            f = 1.0f - lifeP;
+                        }
+                    }
                 }
                 m_fader.SetFadeLevel(f);
             }
@@ -946,7 +956,7 @@ public class GameMan : MonoBehaviour
         }
 
         // Display bonus rot
-        CheckGrabbedBonus();
+        //CheckGrabbedBonus();
 
         if (Input.GetKeyUp(KeyCode.Space))
         {
@@ -1391,6 +1401,7 @@ public class GameMan : MonoBehaviour
         {
             JowLogger.Log($"netId {m_myAvatar.netId}, asking to spawn a new element...");
             m_myAvatar.LoadElements(m_myAvatar.netId);
+            m_myAvatar.RepositionElements(); // JowTodo: Clean this! Shouldn't need it!
         }
     }
 
@@ -1445,7 +1456,8 @@ public class GameMan : MonoBehaviour
     {
         //m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 25.0f);
         //m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 50.0f);
-        m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 100.0f);
+        //m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 100.0f);
+        m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 20.0f * pos.magnitude);
     }
 
 

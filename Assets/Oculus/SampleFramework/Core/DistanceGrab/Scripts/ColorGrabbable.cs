@@ -112,5 +112,16 @@ namespace OculusSampleFramework
             }
             */
         }
+
+
+        public void ForceRelease()
+        {
+            if (grabbedBy != null)
+            {
+                //m_grabbedKinematic = true;
+                m_allowOffhandGrab = false;
+                grabbedBy.ForceRelease(this);
+            }
+        }
     }
 }

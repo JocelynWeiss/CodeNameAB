@@ -234,10 +234,12 @@ public class Mobs : NetworkBehaviour
     private void SetMobLife(float oldVal, float newVal)
     {
         //JowLogger.Log($"Updating {name}.{netId} life from {oldVal} to {newVal} now {m_life}");
-        //if (m_mobType != MobsType.MobMedic)
-        if (m_life < oldVal)
+        if (m_mobType != MobsType.MobMedic)
         {
-            AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[5], transform.position);
+            if (m_life < oldVal)
+            {
+                AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[5], transform.position);
+            }
         }
     }
 
