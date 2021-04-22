@@ -32,8 +32,14 @@ public class BonusNet : NetworkBehaviour
         m_grabbable = GetComponent<ColorGrabbable>();
         m_rb = GetComponent<Rigidbody>();
         m_used = false;
-        //JowLogger.Log($"ElementsNet Start ++++++++++ {m_elemType}, netId {netId}, hasAuthority {hasAuthority}, avatarAuthority {GameMan.s_instance.GetLocalPlayer().hasAuthority}");
+        JowLogger.Log($"BonusNet Start ++++++++++ {m_elemType}, netId {netId}, hasAuthority {hasAuthority}, avatarAuthority {GameMan.s_instance.GetLocalPlayer().hasAuthority}");
         ChangeType(m_elemType, GameMan.s_instance.m_CubesElemMats[(int)m_elemType]);
+
+        if (hasAuthority)
+        {
+            Vector3 force = transform.forward * 20.0f * transform.position.magnitude;
+            AddForce(force);
+        }
 
         GameMan.s_instance.RegisterBonus(this);
     }
@@ -80,7 +86,7 @@ public class BonusNet : NetworkBehaviour
 
         AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[7], transform.position);
         m_used = true;
-        GameMan.s_instance.TriggerBonus();
+        GameMan.s_instance.TriggerBonus(m_elemType);
         StartCoroutine(DelayedFall(0.0f)); // Put it away from the grab so it will be released
         //DestroySelf();
         //Invoke(nameof(DestroySelf), m_lifeTime);
@@ -100,7 +106,7 @@ public class BonusNet : NetworkBehaviour
         //m_rb.isKinematic = true;
         m_grabbable.ForceRelease();
 
-        GameMan.s_instance.TriggerBonus();
+        GameMan.s_instance.TriggerBonus(m_elemType);
         StartCoroutine(DelayedFall(0.0f)); // Put it away from the grab so it will be released
 
         //m_grabbable.Highlight = false;

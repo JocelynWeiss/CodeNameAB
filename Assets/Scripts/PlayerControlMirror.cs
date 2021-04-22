@@ -339,42 +339,57 @@ public class PlayerControlMirror : NetworkBehaviour
     }
 
 
-    [Command] public void LoadElements(uint _netId)
+    [Command] public void LoadElements(uint _netId, Elements _type)
     {
         GameObject elemPrefab = NetworkManager.singleton.spawnPrefabs[5];
         if (elemPrefab)
         {
-            int count = m_myElems.Count + 1;
-            //Vector3 pos = m_myPillar.transform.position + new Vector3(-1.2f, 2.0f + ((float)count * 0.2f), 0.0f);
-            //pos += m_myPillar.transform.forward * 0.8f;
-            //Vector3 pos = m_myPillar.transform.position + new Vector3(-1.0f, 2.25f + ((float)count * 0.2f), 0.0f);
-            Vector3 pos = m_myPillar.transform.position + new Vector3(-0.8f, 2.25f + ((float)count * 0.2f), 0.0f);
-            pos += m_myPillar.transform.forward * 0.5f;
+            Vector3 pos = m_myPillar.transform.position;
+            if (m_myElems.Count == 0)
+            {
+                pos += GameMan.s_instance.m_elemStartPos;
+                pos += m_myPillar.transform.forward * 0.5f;
+            }
+            else
+            {
+                pos = m_myElems[m_myElems.Count - 1].transform.position;
+                pos.y += 0.2f;
+            }
+
             GameObject newCube = Instantiate(elemPrefab, pos, Quaternion.identity);
-            newCube.transform.position = pos + new Vector3(0.0f, 0.0f, 0.0f);
             ElementsNet elem = newCube.GetComponent<ElementsNet>();
-            int matId = Random.Range(0, 4);
-            elem.ChangeType((Elements)matId, GameMan.s_instance.m_CubesElemMats[matId]);
+            elem.ChangeType(_type, GameMan.s_instance.m_CubesElemMats[(int)_type]);
             elem.m_ownerId = _netId;
-            //NetworkServer.Spawn(newCube);
             NetworkServer.Spawn(newCube, this.gameObject); // Client authoritative
         }
     }
 
 
-    [Command] public void SpawnBonus(uint _netId, Vector3 pos, Vector3 force)
+    //[Command] public void SpawnBonus(PlayerControlMirror plr, Vector3 pos, Vector3 force)
+    // Spawning is done by the server so there is no need for a Command here!
+    public void SpawnBonus(PlayerControlMirror plr, Vector3 pos, Vector3 forward)
     {
+        JowLogger.Log($"{netId} SpawnBonus for {plr.netId}");
         int prefabIdx = 9;
         GameObject elemPrefab = NetworkManager.singleton.spawnPrefabs[prefabIdx];
         if (elemPrefab)
         {
-            GameObject go = Instantiate(elemPrefab, pos, Quaternion.identity);
+            Quaternion q = Quaternion.LookRotation(forward);
+            GameObject go = Instantiate(elemPrefab, pos, q);
             BonusNet elem = go.GetComponent<BonusNet>();
             int matId = Random.Range(0, 4);
             elem.ChangeType((Elements)matId, GameMan.s_instance.m_CubesElemMats[matId]);
-            NetworkServer.Spawn(go, this.gameObject); // Client authoritative
-            elem.AddForce(force);
+            NetworkServer.Spawn(go, plr.gameObject); // Client authoritative
         }
+    }
+
+
+    // A client is asking the server to spawn a new bonus
+    [Command] public void SpawnBonusFromClient(uint plrUid, Vector3 pos, Vector3 forward)
+    {
+        //JowLogger.Log($"TTTTTTTTTTTTTTTTTTT Cmd SpawnBonusFromClient from {netId} hasAuthority {hasAuthority} isServer {isServer}, for {plrUid}");
+        PlayerControlMirror plr = GameMan.s_instance.GetPlayerPerId(plrUid);
+        GameMan.s_instance.SpawnBonus(plr, pos, forward);
     }
 
 
@@ -395,10 +410,8 @@ public class PlayerControlMirror : NetworkBehaviour
             if (elem.m_used == true)
                 continue;
 
-            //Vector3 pos = m_myPillar.transform.position + new Vector3(-1.2f, 2.0f + ((float)count * 0.2f), 0.0f);
-            //pos += m_myPillar.transform.forward * 0.8f;
-            //Vector3 pos = m_myPillar.transform.position + new Vector3(-1.0f, 2.25f + ((float)count * 0.2f), 0.0f);
-            Vector3 pos = m_myPillar.transform.position + new Vector3(-0.8f, 2.25f + ((float)count * 0.2f), 0.0f);
+            Vector3 pos = m_myPillar.transform.position + GameMan.s_instance.m_elemStartPos;
+            pos.y += (float)count * 0.2f;
             pos += m_myPillar.transform.forward * 0.5f;
             elem.transform.position = pos;
             elem.gameObject.SetActive(true);

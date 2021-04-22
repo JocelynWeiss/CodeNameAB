@@ -51,7 +51,7 @@ public class ElementsNet : NetworkBehaviour
             if (m_ownerId == plr.netId)
             {
                 plr.m_myElems.Add(this);
-                JowLogger.Log($"\t ++++++++++ Add elem to player {plr.name}, count {plr.m_myElems.Count} --- netId {netId}");
+                JowLogger.Log($"\t ++++++++++ Add elem to player {plr.netId}, count {plr.m_myElems.Count} --- netId {netId}");
             }
         }
     }

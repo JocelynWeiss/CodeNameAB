@@ -294,4 +294,24 @@ public class WaveClass
         m_mobs.Add(mob);
         NetworkServer.Spawn(mobGo);
     }
+
+
+    // Return closest mob from pos
+    public Mobs GetClosestMob(Vector3 _pos)
+    {
+        Mobs ret = null;
+        float dist = float.MaxValue;
+
+        foreach (Mobs mob in m_mobs)
+        {
+            float d = (_pos - mob.transform.position).magnitude;
+            if (d < dist)
+            {
+                dist = d;
+                ret = mob;
+            }
+        }
+
+        return ret;
+    }
 }

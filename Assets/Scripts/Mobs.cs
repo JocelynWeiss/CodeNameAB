@@ -71,6 +71,8 @@ public class Mobs : NetworkBehaviour
     public override void OnStartClient()
     {
         //JowLogger.Log($"{Time.fixedTime}s OnStartClient---");
+        GameMan.s_instance.RegisterNewMob(this);
+
         if (m_mobType != MobsType.MobMedic)
         {
             AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[3], transform.position);
@@ -91,6 +93,7 @@ public class Mobs : NetworkBehaviour
     public override void OnStopClient()
     {
         JowLogger.Log($"OnStopClient --- {gameObject} --- netId {netId}");
+        GameMan.s_instance.UnregisterMob(this);
         AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[2], transform.position);
         base.OnStopClient();
     }

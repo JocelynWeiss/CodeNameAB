@@ -70,7 +70,7 @@ public class GameMan : MonoBehaviour
     public Material[] m_CubesElemMats = new Material[4];
     public int m_maxElementCount = 4; // Max element per player
     public GameObject m_elementCubePrefab;
-    //List<ElementsScript> m_elemCubes = new List<ElementsScript>(); // Deprecated
+    [Tooltip("Relative to the player pillar")] public Vector3 m_elemStartPos; // -0.8, 2.25, 0.0
 
     List<BonusNet> m_allBonuses = new List<BonusNet>();
 
@@ -470,6 +470,31 @@ public class GameMan : MonoBehaviour
         if (m_allBonuses.Contains(bonus))
         {
             m_allBonuses.Remove(bonus);
+        }
+    }
+
+
+    // Register a new mob for the clients
+    public void RegisterNewMob(Mobs _mob)
+    {
+        if (m_netMan.mode == NetworkManagerMode.ClientOnly)
+        {
+            //JowLogger.Log($"***** ********* **********Registering new mob {_mob.name}, {_mob.netId}, playerAuthority= {m_myAvatar.hasAuthority}");
+            m_wave.m_mobs.Add(_mob);
+            SetPlayerInfoText();
+        }
+    }
+
+
+    public void UnregisterMob(Mobs _mob)
+    {
+        if (m_netMan.mode == NetworkManagerMode.ClientOnly)
+        {
+            if (m_wave.m_mobs.Contains(_mob))
+            {
+                m_wave.m_mobs.Remove(_mob);
+                SetPlayerInfoText();
+            }
         }
     }
 
@@ -884,6 +909,7 @@ public class GameMan : MonoBehaviour
                     f = Mathf.Lerp(0.0f, 0.75f, 0.5f - m_playerLifeBar.m_fill.fillAmount);
 
                     // Death if any player is dead
+                    /*
                     foreach (PlayerControlMirror plr in m_allPlayers)
                     {
                         float lifeP = plr.m_curLife / m_playerLifeBar.m_maximum;
@@ -892,6 +918,7 @@ public class GameMan : MonoBehaviour
                             f = 1.0f - lifeP;
                         }
                     }
+                    */
                 }
                 m_fader.SetFadeLevel(f);
             }
@@ -990,7 +1017,7 @@ public class GameMan : MonoBehaviour
                 {
                     b.GetColorGrabbable().m_lastGrabbed = Time.time;
                     //CheckGrabbedBonus();
-                    b.AddAngularVelocity(new Vector3(0.0f, 5.0f, 0.0f));
+                    b.AddAngularVelocity(new Vector3(0.0f, 50.0f, 0.0f));
                     b.GetColorGrabbable().Highlight = true;
                     b.GetColorGrabbable().UpdateColor();
                     break;
@@ -1121,12 +1148,12 @@ public class GameMan : MonoBehaviour
             }
             */
 
-            if (NetworkManager.singleton.mode == NetworkManagerMode.Host)
+            // Spawn a bonus on closest mob
+            Mobs mob = m_wave.GetClosestMob(m_myAvatar.transform.position);
+            if (mob != null)
             {
-                Vector3 pos = Vector3.zero;
-                Mobs mob = m_wave.m_mobs[0];
                 Vector3 f = (m_myAvatar.transform.position - mob.transform.position).normalized;
-                SpawnBonus(m_myAvatar, mob.transform.position, f);
+                m_myAvatar.SpawnBonusFromClient(m_myAvatar.netId, mob.transform.position, f);
             }
         }
         
@@ -1395,13 +1422,12 @@ public class GameMan : MonoBehaviour
     }
 
 
-    public void TriggerBonus()
+    public void TriggerBonus(Elements _type)
     {
         if (m_myAvatar.hasAuthority)
         {
             JowLogger.Log($"netId {m_myAvatar.netId}, asking to spawn a new element...");
-            m_myAvatar.LoadElements(m_myAvatar.netId);
-            m_myAvatar.RepositionElements(); // JowTodo: Clean this! Shouldn't need it!
+            m_myAvatar.LoadElements(m_myAvatar.netId, _type);
         }
     }
 
@@ -1452,12 +1478,10 @@ public class GameMan : MonoBehaviour
     }
 
 
+    // Server is spawning a bonus for plr
     public void SpawnBonus(PlayerControlMirror plr, Vector3 pos, Vector3 forward)
     {
-        //m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 25.0f);
-        //m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 50.0f);
-        //m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 100.0f);
-        m_myAvatar.SpawnBonus(m_myAvatar.netId, pos + forward, forward * 20.0f * pos.magnitude);
+        m_myAvatar.SpawnBonus(plr, pos + forward, forward);
     }
 
 

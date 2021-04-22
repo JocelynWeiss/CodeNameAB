@@ -1075,7 +1075,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_logTitle: {fileID: 0}
   m_netMan: {fileID: 313177742}
-  m_minPlayerNb: 1
+  m_minPlayerNb: 2
   m_firstWaveDelay: 5
   m_endOfWaveDelay: 3
   m_allPlayers: []
@@ -1098,6 +1098,7 @@ MonoBehaviour:
   m_maxElementCount: 4
   m_elementCubePrefab: {fileID: 7156512036141905571, guid: 68751d69f462bf64a8ba11e8e42500cb,
     type: 3}
+  m_elemStartPos: {x: -0.8, y: 2.25, z: 0}
   m_MedicMat: {fileID: 0}
   m_audioSounds:
   - {fileID: 8300000, guid: 47aa5d5fc0657584aa9db9db5d029d84, type: 3}
