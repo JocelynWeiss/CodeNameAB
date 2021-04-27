@@ -8,7 +8,11 @@ using OculusSampleFramework;
 
 // The game manager using mirror networking services...
 //JowNext: 
-
+// Time between wave should be longer to rest a bit
+// Smaller wrecking ball
+// Create a wave with several wrecking ball of several sizes
+// Animate the big clock with 4 needles (at the start of each wave they turn like hell, when the last mob has almost no life, they turn on the clock)
+// Create a lake or ocean... for the floor
 
 
 // Our 4 Elements in the game
@@ -66,6 +70,8 @@ public class GameMan : MonoBehaviour
     [HideInInspector] public OVRScreenFade m_fader;
     [HideInInspector] public CamShakeScript m_shaker;
 
+    bool m_rightIsFiring = false;
+    bool m_leftIsFiring = false;
     Vector3 m_prevLeftRight;
     Vector3 m_prevLeftForward;
     Vector3 m_prevLeftPos;
@@ -177,7 +183,7 @@ public class GameMan : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        m_netMan.networkAddress = "localhost"; // overwrite public field when not at Henigma...
+        //m_netMan.networkAddress = "localhost"; // overwrite public field when not at Henigma...
         JowLogger.Log($"GameMan Init @ {Time.fixedTime}");
         JowLogger.m_logTime = true;
     }
@@ -619,6 +625,17 @@ public class GameMan : MonoBehaviour
 
         if (m_myAvatar == null)
             return;
+
+        if (m_leftIsFiring)
+        {
+            Quaternion q = Quaternion.LookRotation(m_prevLeftRight);
+            TryFire(false, m_prevLeftPos, q, m_prevLeftForward);
+        }
+        if (m_rightIsFiring)
+        {
+            Quaternion q = Quaternion.LookRotation(m_prevRightRight);
+            TryFire(true, m_prevRightPos, q, m_prevRightForward);
+        }
 
         //---
         /*
@@ -1374,6 +1391,34 @@ public class GameMan : MonoBehaviour
         }
 
         // Check hands
+        if (m_leftHand.IsDataHighConfidence)
+        {
+            if (m_leftHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
+            {
+                m_isUsingHands = true;
+                m_leftIsFiring = true;
+                m_prevLeftRight = m_leftHand.transform.right;
+                m_prevLeftForward = m_leftHand.transform.forward;
+                m_prevLeftPos = m_leftHand.transform.position;
+            }
+            else
+            {
+                m_leftIsFiring = false;
+            }
+            if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
+            {
+                m_isUsingHands = true;
+                m_rightIsFiring = true;
+                m_prevRightRight = -m_rightHand.transform.right;
+                m_prevRightForward = m_rightHand.transform.forward;
+                m_prevRightPos = m_rightHand.transform.position;
+            }
+            else
+            {
+                m_rightIsFiring = false;
+            }
+        }
+        /*
         if (m_leftHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
         {
             //float pinchStrength = m_leftHand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
@@ -1411,6 +1456,9 @@ public class GameMan : MonoBehaviour
                 }
             }
         }
+        */
+
+        /*
         if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
         {
             //float pinchStrength = m_rightHand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
@@ -1448,6 +1496,7 @@ public class GameMan : MonoBehaviour
                 }
             }
         }
+        */
 
         // Update head
 #if UNITY_EDITOR
