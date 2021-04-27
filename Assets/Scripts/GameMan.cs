@@ -66,6 +66,13 @@ public class GameMan : MonoBehaviour
     [HideInInspector] public OVRScreenFade m_fader;
     [HideInInspector] public CamShakeScript m_shaker;
 
+    Vector3 m_prevLeftRight;
+    Vector3 m_prevLeftForward;
+    Vector3 m_prevLeftPos;
+    Vector3 m_prevRightRight;
+    Vector3 m_prevRightForward;
+    Vector3 m_prevRightPos;
+
     public Material[] m_CubesElemMats = new Material[4];
     public int m_maxElementCount = 4; // Max element per player
     public GameObject m_elementCubePrefab;
@@ -1371,7 +1378,6 @@ public class GameMan : MonoBehaviour
         {
             //float pinchStrength = m_leftHand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
             //m_logTitle.text = $"pinchStrength = {pinchStrength}";
-
             if (m_isUsingHands == false)
             {
                 m_isUsingHands = true;
@@ -1381,12 +1387,28 @@ public class GameMan : MonoBehaviour
             if (m_isUsingHands)
             {
                 trs = m_leftHand.transform;
+                if (m_leftHand.IsDataHighConfidence)
+                {
+                    m_prevLeftRight = m_leftHand.transform.right;
+                    m_prevLeftForward = m_leftHand.transform.forward;
+                    m_prevLeftPos = m_leftHand.transform.position;
+                }
             }
 
             if (CanFire() == true)
             {
-                Quaternion q = Quaternion.LookRotation(m_leftHand.transform.right);
-                TryFire(false, trs.position, q, m_leftHand.transform.forward);
+                //Quaternion q = Quaternion.LookRotation(m_leftHand.transform.right);
+                //TryFire(false, trs.position, q, m_leftHand.transform.forward);
+                if (m_isUsingHands)
+                {
+                    Quaternion q = Quaternion.LookRotation(m_prevLeftRight);
+                    TryFire(false, m_prevLeftPos, q, m_prevLeftForward);
+                }
+                else
+                {
+                    Quaternion q = Quaternion.LookRotation(m_leftHand.transform.right);
+                    TryFire(false, trs.position, q, m_leftHand.transform.forward);
+                }
             }
         }
         if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
@@ -1399,10 +1421,31 @@ public class GameMan : MonoBehaviour
             }
             Transform trs = m_rightHand.transform;
 
+            if (m_isUsingHands)
+            {
+                trs = m_rightHand.transform;
+                if (m_rightHand.IsDataHighConfidence)
+                {
+                    m_prevRightRight = m_rightHand.transform.right;
+                    m_prevRightForward = m_rightHand.transform.forward;
+                    m_prevRightPos = m_rightHand.transform.position;
+                }
+            }
+
             if (CanFire() == true)
             {
-                Quaternion q = Quaternion.LookRotation(-m_rightHand.transform.right);
-                TryFire(true, trs.position, q, m_rightHand.transform.forward);
+                //Quaternion q = Quaternion.LookRotation(-m_rightHand.transform.right);
+                //TryFire(true, trs.position, q, m_rightHand.transform.forward);
+                if (m_isUsingHands)
+                {
+                    Quaternion q = Quaternion.LookRotation(-m_prevRightRight);
+                    TryFire(true, m_prevRightPos, q, m_prevRightForward);
+                }
+                else
+                {
+                    Quaternion q = Quaternion.LookRotation(m_rightHand.transform.right);
+                    TryFire(true, trs.position, q, m_rightHand.transform.forward);
+                }
             }
         }
 
