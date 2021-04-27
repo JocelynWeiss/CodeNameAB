@@ -99,4 +99,10 @@ public class CamShakeScript : MonoBehaviour
     {
         m_duration = delay;
     }
+
+
+    public void IncreaseDuration(float _sec)
+    {
+        m_duration += _sec;
+    }
 }

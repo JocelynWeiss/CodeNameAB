@@ -9,7 +9,7 @@ public enum MobsType { MobA, MobB, MobC, MobMedic}
 
 public class Mobs : NetworkBehaviour
 {
-    public MobsType m_mobType = MobsType.MobA;
+    [SyncVar] public MobsType m_mobType = MobsType.MobA;
     public string m_name;
     [SyncVar(hook = nameof(SetMobLife))] public float m_life;
     [SyncVar] public float m_armor;
@@ -70,7 +70,7 @@ public class Mobs : NetworkBehaviour
 
     public override void OnStartClient()
     {
-        //JowLogger.Log($"{Time.fixedTime}s OnStartClient---");
+        //JowLogger.Log($"OnStartClient--- {netId}, {m_mobType}");
         GameMan.s_instance.RegisterNewMob(this);
 
         if (m_mobType != MobsType.MobMedic)

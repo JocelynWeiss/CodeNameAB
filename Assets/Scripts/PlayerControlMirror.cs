@@ -148,6 +148,29 @@ public class PlayerControlMirror : NetworkBehaviour
     }
 
 
+    // JowTodo: Cannot work if there is only 1 element and it was on the second spot
+    int FindFreeElementSpot()
+    {
+        int ret = 0;
+
+        if (m_myElems.Count == 0)
+        {
+            return ret;
+        }
+
+        foreach (ElementsNet elem in m_myElems)
+        {
+            if (elem.m_used == true)
+            {
+                return ret;
+            }
+            ret++;
+        }
+
+        return ret;
+    }
+
+
     // Executed by host from client
     [Command] void CmdChangeAvatarColour()
     {
@@ -344,17 +367,11 @@ public class PlayerControlMirror : NetworkBehaviour
         GameObject elemPrefab = NetworkManager.singleton.spawnPrefabs[5];
         if (elemPrefab)
         {
-            Vector3 pos = m_myPillar.transform.position;
-            if (m_myElems.Count == 0)
-            {
-                pos += GameMan.s_instance.m_elemStartPos;
-                pos += m_myPillar.transform.forward * 0.5f;
-            }
-            else
-            {
-                pos = m_myElems[m_myElems.Count - 1].transform.position;
-                pos.y += 0.2f;
-            }
+            //int spot = FindFreeElementSpot();
+            int spot = 0;
+            Vector3 pos = m_myPillar.transform.position + GameMan.s_instance.m_elemStartPos;
+            pos.y += (float)spot * 0.2f;
+            pos += m_myPillar.transform.forward * 0.5f;
 
             GameObject newCube = Instantiate(elemPrefab, pos, Quaternion.identity);
             ElementsNet elem = newCube.GetComponent<ElementsNet>();
@@ -404,7 +421,7 @@ public class PlayerControlMirror : NetworkBehaviour
 
     public void RepositionElements()
     {
-        int count = 1;
+        int count = 0;
         foreach (ElementsNet elem in m_myElems)
         {
             if (elem.m_used == true)

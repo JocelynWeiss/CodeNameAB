@@ -37,8 +37,11 @@ public class BonusNet : NetworkBehaviour
 
         if (hasAuthority)
         {
+            m_rb.isKinematic = false;
+            m_rb.useGravity = false;
             Vector3 force = transform.forward * 20.0f * transform.position.magnitude;
             AddForce(force);
+            AddAngularVelocity(Random.insideUnitSphere);
         }
 
         GameMan.s_instance.RegisterBonus(this);
@@ -100,13 +103,10 @@ public class BonusNet : NetworkBehaviour
 
         AudioSource.PlayClipAtPoint(GameMan.s_instance.m_audioSounds[8], transform.position);
         m_used = true;
-        //m_grabbable.GrabEnd(Vector3.zero, Vector3.zero);
-        //m_grabbable.GrabEnd(Vector3.zero, Vector3.zero);
-        //m_rb.angularVelocity = Vector3.zero;
-        //m_rb.isKinematic = true;
-        m_grabbable.ForceRelease();
+        m_grabbable.ForceRelease(false);
 
         GameMan.s_instance.TriggerBonus(m_elemType);
+        AddForce(new Vector3(0.0f, 100.0f, 0.0f)); // Pops up
         StartCoroutine(DelayedFall(0.0f)); // Put it away from the grab so it will be released
 
         //m_grabbable.Highlight = false;
@@ -133,20 +133,20 @@ public class BonusNet : NetworkBehaviour
 
     public void AddForce(Vector3 force)
     {
-        Rigidbody rb = GetComponent<Rigidbody>();
-        rb.isKinematic = false;
-        rb.useGravity = false;
-        rb.AddForce(force);
-        rb.angularVelocity = Random.insideUnitSphere;
+        if (m_rb)
+        {
+            m_rb.AddForce(force);
+        }
     }
 
 
     // Add angular velocity
     public void AddAngularVelocity(Vector3 _vel)
     {
-        Rigidbody rb = GetComponent<Rigidbody>();
-        rb.isKinematic = false;
-        rb.angularVelocity += _vel;
+        if (m_rb)
+        {
+            m_rb.angularVelocity += _vel;
+        }
     }
 
 

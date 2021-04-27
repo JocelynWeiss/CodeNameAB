@@ -7,9 +7,7 @@ using OculusSampleFramework;
 
 
 // The game manager using mirror networking services...
-//JowNext: Add a game over if no more life
-// Hold a list of players affected by walls in wreckingball class to compute damages on the server.
-// Trigger Bonuses
+//JowNext: 
 
 
 
@@ -31,6 +29,7 @@ public class GameMan : MonoBehaviour
     public TextMeshProUGUI m_logTitle;
 
     public NetworkManager m_netMan;
+    public bool m_allowDeath = true;
     public int m_minPlayerNb = 2; // Minimum player number required to launch first wave
     public float m_firstWaveDelay = 10.0f; // seconds before launching first wave
     public float m_endOfWaveDelay = 8.0f; // seconds the game is still running after all mobs death.
@@ -85,6 +84,8 @@ public class GameMan : MonoBehaviour
     [InspectorNote("Audio Sounds Setup")]
     public List<AudioClip> m_audioSounds;
     bool[] m_countDownSound = new bool[5];
+    bool m_firstDeath = false;
+    bool m_quitApp = false;
 
 
     public List<GameObject> GetPillarPool()
@@ -371,6 +372,8 @@ public class GameMan : MonoBehaviour
     public void SetPlayerInfoText()
     {
         m_playerInfoText.text = $"Wave {m_waveNb}\nAmmo {m_myAvatar.m_ammoCount} MobNb {m_wave.m_mobs.Count}";
+
+        //m_playerInfoText.text = $"Debug dist from pillar: {CalcFlatDistFromPillar()}";
     }
 
 
@@ -607,9 +610,33 @@ public class GameMan : MonoBehaviour
         if (!m_netMan.isNetworkActive)
             return;
 
-        // Next is only for the server
         if (m_myAvatar == null)
             return;
+
+        //---
+        /*
+        float outDist = CalcFlatDistFromPillar();
+        if (m_shaker != null)
+        {
+            float maxD = 0.1f;
+            if (outDist > maxD)
+            {
+                // update pace 
+                m_shaker.m_wobblePace = Mathf.Lerp(0.0f, 10.0f, outDist - maxD);
+                m_playerInfoText.text = $"Debug dist: {outDist}";
+
+                if (m_shaker.m_wobbling == false)
+                {
+                    m_shaker.Shake1(m_cameraRig.transform, 2.0f);
+                }
+                else
+                {
+                    // add time 
+                    m_shaker.IncreaseDuration(Time.fixedDeltaTime);
+                }
+            }
+        }
+        */
 
         if (m_nextWaveDate > System.DateTime.Now.ToOADate())
         {
@@ -909,16 +936,33 @@ public class GameMan : MonoBehaviour
                     f = Mathf.Lerp(0.0f, 0.75f, 0.5f - m_playerLifeBar.m_fill.fillAmount);
 
                     // Death if any player is dead
-                    /*
-                    foreach (PlayerControlMirror plr in m_allPlayers)
+                    if (m_allowDeath)
                     {
-                        float lifeP = plr.m_curLife / m_playerLifeBar.m_maximum;
-                        if (lifeP < 0.08f)
+                        foreach (PlayerControlMirror plr in m_allPlayers)
                         {
-                            f = 1.0f - lifeP;
+                            float lifeP = plr.m_curLife / m_playerLifeBar.m_maximum;
+                            if (lifeP < 0.08f)
+                            {
+                                f = 1.0f - lifeP;
+                                if (m_firstDeath == false)
+                                {
+                                    m_firstDeath = true;
+                                    AudioSource.PlayClipAtPoint(m_audioSounds[9], plr.transform.position);
+                                }
+                                if (lifeP <= 0.0f)
+                                {
+                                    if (m_quitApp == false)
+                                    {
+                                        m_quitApp = true;
+                                        Application.Quit();
+#if UNITY_EDITOR
+                                        UnityEditor.EditorApplication.isPlaying = false;
+#endif
+                                    }
+                                }
+                            }
                         }
                     }
-                    */
                 }
                 m_fader.SetFadeLevel(f);
             }
@@ -1093,8 +1137,9 @@ public class GameMan : MonoBehaviour
             {
                 if (elem.m_used == false)
                 {
-                    elem.GetColorGrabbable().m_lastGrabbed = Time.time;
-                    elem.transform.position = m_cameraRig.transform.position + Vector3.up * 2.0f; // Put it in the activation range
+                    //elem.GetColorGrabbable().m_lastGrabbed = Time.time;
+                    //elem.transform.position = m_cameraRig.transform.position + Vector3.up * 2.0f; // Put it in the activation range
+                    elem.AddAngularVelocity(new Vector3(0.0f, 50.0f, 0.0f)); // Add enough ang vel to trigger it
                     break;
                 }
             }
@@ -1135,26 +1180,30 @@ public class GameMan : MonoBehaviour
             /*
             if (m_shaker)
             {
-                //m_shaker.Shake1(m_cameraRig.transform, 3.0f); // wobble
-
                 if (m_shaker.m_shaking)
                 {
                     m_shaker.StopShaking(0.5f);
                 }
                 else
                 {
-                    m_shaker.Shake2(m_cameraRig.transform, 30.0f);
+                    m_shaker.Shake1(m_cameraRig.transform, 3.0f); // wobble
+                    //m_shaker.Shake2(m_cameraRig.transform, 30.0f);
                 }
             }
-            */
+            //*/
+
+            // Spawn an element
+            //TriggerBonus(Elements.Fire);
 
             // Spawn a bonus on closest mob
+            //*
             Mobs mob = m_wave.GetClosestMob(m_myAvatar.transform.position);
             if (mob != null)
             {
                 Vector3 f = (m_myAvatar.transform.position - mob.transform.position).normalized;
                 m_myAvatar.SpawnBonusFromClient(m_myAvatar.netId, mob.transform.position, f);
             }
+            //*/
         }
         
         // Inverse view for testing
@@ -1482,6 +1531,20 @@ public class GameMan : MonoBehaviour
     public void SpawnBonus(PlayerControlMirror plr, Vector3 pos, Vector3 forward)
     {
         m_myAvatar.SpawnBonus(plr, pos + forward, forward);
+    }
+
+
+    // Return the horizontal distance from our pillar
+    public float CalcFlatDistFromPillar()
+    {
+        // JowNext: shake cam when too far away from pillar
+        float ret = 0.0f;
+        Vector3 myPos = m_myAvatar.transform.position;
+        Vector3 pilPos = m_myAvatar.m_myPillar.transform.position;
+        myPos.y = 0.0f;
+        pilPos.y = 0.0f;
+        ret = (myPos - pilPos).magnitude;
+        return ret;
     }
 
 

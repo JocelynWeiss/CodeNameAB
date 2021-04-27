@@ -114,12 +114,12 @@ namespace OculusSampleFramework
         }
 
 
-        public void ForceRelease()
+        // Jow: Free the grabber so it can grab again. Allow will set if this object can be grabbed again
+        public void ForceRelease(bool _allowGrab)
         {
             if (grabbedBy != null)
             {
-                //m_grabbedKinematic = true;
-                m_allowOffhandGrab = false;
+                m_allowOffhandGrab = _allowGrab;
                 grabbedBy.ForceRelease(this);
             }
         }

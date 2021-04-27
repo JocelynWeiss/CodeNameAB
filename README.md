@@ -2,7 +2,7 @@
  Testing Mirror  
 This is using Unity 2019.4.14f1  
 
-#### Version 0.244
+#### Version 0.245
 
 
 ---------------------------------------------
@@ -65,6 +65,8 @@ Adds camera shake when colliding with a wrecking ball.
 Adds dropped bonus to catch. **WIP**  
 ##### Version 0.244
 Fix for the client to be able to grab Bonuses.  
+##### Version 0.245
+Adds death + Big clock + Fix elements positions + Bullet hitting eachother + Trigger elements by shaking.  
 
 
 

@@ -11,6 +11,7 @@ public class ElementsNet : NetworkBehaviour
     public bool m_used = false;
 
     ColorGrabbable m_grabbable;
+    Rigidbody m_rb;
 
 
     public ColorGrabbable GetColorGrabbable()
@@ -35,6 +36,7 @@ public class ElementsNet : NetworkBehaviour
     void Start()
     {
         m_grabbable = GetComponent<ColorGrabbable>();
+        m_rb = GetComponent<Rigidbody>();
         m_used = false;
         //JowLogger.Log($"ElementsNet Start ++++++++++ {m_elemType}, netId {netId}, hasAuthority {hasAuthority}, avatarAuthority {GameMan.s_instance.GetLocalPlayer().hasAuthority}");
         ChangeType(m_elemType, GameMan.s_instance.m_CubesElemMats[(int)m_elemType]);
@@ -52,6 +54,7 @@ public class ElementsNet : NetworkBehaviour
             {
                 plr.m_myElems.Add(this);
                 JowLogger.Log($"\t ++++++++++ Add elem to player {plr.netId}, count {plr.m_myElems.Count} --- netId {netId}");
+                plr.RepositionElements();
             }
         }
     }
@@ -72,16 +75,28 @@ public class ElementsNet : NetworkBehaviour
 
     private void FixedUpdate()
     {
+        /*
         if (m_grabbable.m_lastGrabbed != 0.0f)
         {
             TriggerElement();
             m_grabbable.m_lastGrabbed = 0.0f;
         }
+        */
+
+        if (m_used)
+            return;
+        if (m_rb)
+        {
+            if (m_rb.angularVelocity.magnitude > 30.0f)
+            {
+                TriggerElement2();
+            }
+        }
     }
 
 
     // Trigger this element
-    public void TriggerElement()
+    private void TriggerElement()
     {
         Vector3 eyePos = GameMan.s_instance.m_cameraRig.transform.position;
         float dist = transform.position.y - eyePos.y;
@@ -96,6 +111,20 @@ public class ElementsNet : NetworkBehaviour
     }
 
 
+    // Trigger this element. Doesn't check the conditions
+    private void TriggerElement2()
+    {
+        if (m_used == false)
+        {
+            GameMan.s_instance.TriggerElement(this);
+            m_used = true;
+            m_grabbable.ForceRelease(false);
+            AddForce(new Vector3(0.0f, 100.0f, 0.0f)); // Pops up
+            StartCoroutine(DelayedFall(0.0f));
+        }
+    }
+
+
     public override void OnStopClient()
     {
         JowLogger.Log($"XXXXXXXXXXXXXXXXXXXXX  OnStopClient elem {netId}");
@@ -105,6 +134,7 @@ public class ElementsNet : NetworkBehaviour
             {
                 plr.m_myElems.Remove(this);
                 JowLogger.Log($"\t removing elem {netId} from client {plr.netId}");
+                plr.RepositionElements();
             }
         }
         base.OnStopClient();
@@ -135,11 +165,22 @@ public class ElementsNet : NetworkBehaviour
 
     public void AddForce(Vector3 force)
     {
-        Rigidbody rb = GetComponent<Rigidbody>();
-        rb.isKinematic = false;
-        rb.useGravity = false;
-        rb.AddForce(force);
-        rb.angularVelocity = Random.insideUnitSphere;
+        if (m_rb)
+        {
+            m_rb.isKinematic = false;
+            m_rb.AddForce(force);
+        }
+    }
+
+
+    // Add angular velocity
+    public void AddAngularVelocity(Vector3 _vel)
+    {
+        if (m_rb)
+        {
+            m_rb.isKinematic = false;
+            m_rb.angularVelocity += _vel;
+        }
     }
 
 
@@ -147,5 +188,20 @@ public class ElementsNet : NetworkBehaviour
     {
         JowLogger.Log($"--- --- --- DestroySelf {netId} Owner {m_ownerId}");
         NetworkManager.Destroy(this.gameObject);
+    }
+
+
+    PlayerControlMirror GetOwner()
+    {
+        PlayerControlMirror ret = null;
+        foreach (PlayerControlMirror plr in GameMan.s_instance.m_allPlayers)
+        {
+            if (m_ownerId == plr.netId)
+            {
+                ret = plr;
+                break;
+            }
+        }
+        return ret;
     }
 }
