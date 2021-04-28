@@ -1076,7 +1076,7 @@ MonoBehaviour:
   m_logTitle: {fileID: 0}
   m_netMan: {fileID: 313177742}
   m_allowDeath: 1
-  m_minPlayerNb: 2
+  m_minPlayerNb: 1
   m_firstWaveDelay: 5
   m_endOfWaveDelay: 3
   m_allPlayers: []
