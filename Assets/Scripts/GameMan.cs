@@ -78,6 +78,7 @@ public class GameMan : MonoBehaviour
     Vector3 m_prevRightRight;
     Vector3 m_prevRightForward;
     Vector3 m_prevRightPos;
+    GlLineSystem m_debugLines;
 
     public Material[] m_CubesElemMats = new Material[4];
     public int m_maxElementCount = 4; // Max element per player
@@ -162,6 +163,9 @@ public class GameMan : MonoBehaviour
 
         m_shaker = GetComponent<CamShakeScript>();
 
+        m_debugLines = m_cameraRig.GetComponentInChildren<GlLineSystem>();
+        m_debugLines.InitLineNumber(6);
+
         LoadElementsMats();
         LoadMedicMat();
 
@@ -183,7 +187,7 @@ public class GameMan : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        //m_netMan.networkAddress = "localhost"; // overwrite public field when not at Henigma...
+        m_netMan.networkAddress = "localhost"; // overwrite public field when not at Henigma...
         JowLogger.Log($"GameMan Init @ {Time.fixedTime}");
         JowLogger.m_logTime = true;
     }
@@ -727,6 +731,16 @@ public class GameMan : MonoBehaviour
             {
                 m_rightHandMirror.transform.SetPositionAndRotation(m_rightHand.transform.position, m_rightHand.transform.rotation);
                 m_leftHandMirror.transform.SetPositionAndRotation(m_leftHand.transform.position, m_leftHand.transform.rotation);
+
+                m_debugLines.SetLine(0, m_prevRightPos, m_prevRightPos + m_prevRightForward * 50.0f, Color.blue); // JowNext: check but right
+                m_debugLines.SetLine(1, m_prevRightPos, m_prevRightPos + m_prevRightRight * 50.0f, Color.red); // OK but forward
+
+                m_debugLines.SetLine(2, m_prevLeftPos, m_prevLeftPos + m_prevLeftForward * 50.0f, Color.blue);
+                m_debugLines.SetLine(3, m_prevLeftPos, m_prevLeftPos + m_prevLeftRight * 50.0f, Color.red);
+
+                // pointer pose is always wrong even the pos it seems
+                m_debugLines.SetLine(4, m_rightHand.PointerPose.position, m_rightHand.PointerPose.position + m_rightHand.PointerPose.forward * 50.0f, Color.green);
+                m_debugLines.SetLine(5, m_leftHand.PointerPose.position, m_leftHand.PointerPose.position + m_leftHand.PointerPose.forward * 50.0f, Color.green);
             }
             else
             {
@@ -738,6 +752,9 @@ public class GameMan : MonoBehaviour
                 m_leftHandMirror.transform.SetPositionAndRotation(pos + l, q);
 
                 //m_rightHandMirror.transform.localScale *= 0.1f; // It seems the whole transform is sync anyway
+
+                m_debugLines.SetLine(0, m_rightHandMirror.transform.position, m_rightHandMirror.transform.position + m_myAvatar.transform.forward * 50.0f, Color.green);
+                m_debugLines.SetLine(1, m_leftHandMirror.transform.position, m_leftHandMirror.transform.position + m_myAvatar.transform.forward * 50.0f, Color.red);
             }
         }
 
@@ -1393,31 +1410,35 @@ public class GameMan : MonoBehaviour
         // Check hands
         if (m_leftHand.IsDataHighConfidence)
         {
+            m_prevLeftRight = m_leftHand.transform.right;
+            m_prevLeftForward = m_leftHand.transform.forward;
+            m_prevLeftPos = m_leftHand.transform.position;
             if (m_leftHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
             {
                 m_isUsingHands = true;
                 m_leftIsFiring = true;
-                m_prevLeftRight = m_leftHand.transform.right;
-                m_prevLeftForward = m_leftHand.transform.forward;
-                m_prevLeftPos = m_leftHand.transform.position;
             }
             else
             {
                 m_leftIsFiring = false;
             }
+        }
+        if (m_rightHand.IsDataHighConfidence)
+        {
+            m_prevRightRight = -m_rightHand.transform.right;
+            m_prevRightForward = m_rightHand.transform.forward;
+            m_prevRightPos = m_rightHand.transform.position;
             if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
             {
                 m_isUsingHands = true;
                 m_rightIsFiring = true;
-                m_prevRightRight = -m_rightHand.transform.right;
-                m_prevRightForward = m_rightHand.transform.forward;
-                m_prevRightPos = m_rightHand.transform.position;
             }
             else
             {
                 m_rightIsFiring = false;
             }
         }
+
         /*
         if (m_leftHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
         {
@@ -1458,47 +1479,47 @@ public class GameMan : MonoBehaviour
         }
         */
 
-        /*
-        if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
-        {
-            //float pinchStrength = m_rightHand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
-            //m_logTitle.text = $"pinchStrength = {pinchStrength}";
-            if (m_isUsingHands == false)
+            /*
+            if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
             {
-                m_isUsingHands = true;
-            }
-            Transform trs = m_rightHand.transform;
-
-            if (m_isUsingHands)
-            {
-                trs = m_rightHand.transform;
-                if (m_rightHand.IsDataHighConfidence)
+                //float pinchStrength = m_rightHand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
+                //m_logTitle.text = $"pinchStrength = {pinchStrength}";
+                if (m_isUsingHands == false)
                 {
-                    m_prevRightRight = m_rightHand.transform.right;
-                    m_prevRightForward = m_rightHand.transform.forward;
-                    m_prevRightPos = m_rightHand.transform.position;
+                    m_isUsingHands = true;
                 }
-            }
+                Transform trs = m_rightHand.transform;
 
-            if (CanFire() == true)
-            {
-                //Quaternion q = Quaternion.LookRotation(-m_rightHand.transform.right);
-                //TryFire(true, trs.position, q, m_rightHand.transform.forward);
                 if (m_isUsingHands)
                 {
-                    Quaternion q = Quaternion.LookRotation(-m_prevRightRight);
-                    TryFire(true, m_prevRightPos, q, m_prevRightForward);
+                    trs = m_rightHand.transform;
+                    if (m_rightHand.IsDataHighConfidence)
+                    {
+                        m_prevRightRight = m_rightHand.transform.right;
+                        m_prevRightForward = m_rightHand.transform.forward;
+                        m_prevRightPos = m_rightHand.transform.position;
+                    }
                 }
-                else
+
+                if (CanFire() == true)
                 {
-                    Quaternion q = Quaternion.LookRotation(m_rightHand.transform.right);
-                    TryFire(true, trs.position, q, m_rightHand.transform.forward);
+                    //Quaternion q = Quaternion.LookRotation(-m_rightHand.transform.right);
+                    //TryFire(true, trs.position, q, m_rightHand.transform.forward);
+                    if (m_isUsingHands)
+                    {
+                        Quaternion q = Quaternion.LookRotation(-m_prevRightRight);
+                        TryFire(true, m_prevRightPos, q, m_prevRightForward);
+                    }
+                    else
+                    {
+                        Quaternion q = Quaternion.LookRotation(m_rightHand.transform.right);
+                        TryFire(true, trs.position, q, m_rightHand.transform.forward);
+                    }
                 }
             }
-        }
-        */
+            */
 
-        // Update head
+            // Update head
 #if UNITY_EDITOR
 #else
         //---
