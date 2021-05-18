@@ -188,8 +188,9 @@ public class GameMan : MonoBehaviour
     void Start()
     {
         m_netMan.networkAddress = "localhost"; // overwrite public field when not at Henigma...
-        JowLogger.Log($"GameMan Init @ {Time.fixedTime}");
+        JowLogger.Log($"GameMan Init @ {Time.fixedTime} on {m_netMan.networkAddress}");
         JowLogger.m_logTime = true;
+        GetLocalIPAddress();
     }
 
 
@@ -197,6 +198,21 @@ public class GameMan : MonoBehaviour
     private void OnDestroy()
     {
         s_log.Close();
+    }
+
+
+    // Just print ip addresses
+    public void GetLocalIPAddress()
+    {
+        var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+        foreach (var ip in host.AddressList)
+        {
+            if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+            {
+                JowLogger.Log($"{ip.ToString()}");
+                //return ip.ToString();
+            }
+        }
     }
 
 
@@ -1413,7 +1429,8 @@ public class GameMan : MonoBehaviour
             m_prevLeftRight = m_leftHand.transform.right;
             m_prevLeftForward = m_leftHand.transform.forward;
             m_prevLeftPos = m_leftHand.transform.position;
-            if (m_leftHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
+            //if (m_leftHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
+            if (m_leftHand.GetFingerIsPinching(OVRHand.HandFinger.Index))
             {
                 m_isUsingHands = true;
                 m_leftIsFiring = true;
@@ -1428,7 +1445,8 @@ public class GameMan : MonoBehaviour
             m_prevRightRight = -m_rightHand.transform.right;
             m_prevRightForward = m_rightHand.transform.forward;
             m_prevRightPos = m_rightHand.transform.position;
-            if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
+            //if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
+            if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Index))
             {
                 m_isUsingHands = true;
                 m_rightIsFiring = true;
@@ -1479,47 +1497,75 @@ public class GameMan : MonoBehaviour
         }
         */
 
-            /*
-            if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
+        /*
+        if (m_rightHand.GetFingerIsPinching(OVRHand.HandFinger.Middle))
+        {
+            //float pinchStrength = m_rightHand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
+            //m_logTitle.text = $"pinchStrength = {pinchStrength}";
+            if (m_isUsingHands == false)
             {
-                //float pinchStrength = m_rightHand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
-                //m_logTitle.text = $"pinchStrength = {pinchStrength}";
-                if (m_isUsingHands == false)
-                {
-                    m_isUsingHands = true;
-                }
-                Transform trs = m_rightHand.transform;
+                m_isUsingHands = true;
+            }
+            Transform trs = m_rightHand.transform;
 
-                if (m_isUsingHands)
+            if (m_isUsingHands)
+            {
+                trs = m_rightHand.transform;
+                if (m_rightHand.IsDataHighConfidence)
                 {
-                    trs = m_rightHand.transform;
-                    if (m_rightHand.IsDataHighConfidence)
-                    {
-                        m_prevRightRight = m_rightHand.transform.right;
-                        m_prevRightForward = m_rightHand.transform.forward;
-                        m_prevRightPos = m_rightHand.transform.position;
-                    }
-                }
-
-                if (CanFire() == true)
-                {
-                    //Quaternion q = Quaternion.LookRotation(-m_rightHand.transform.right);
-                    //TryFire(true, trs.position, q, m_rightHand.transform.forward);
-                    if (m_isUsingHands)
-                    {
-                        Quaternion q = Quaternion.LookRotation(-m_prevRightRight);
-                        TryFire(true, m_prevRightPos, q, m_prevRightForward);
-                    }
-                    else
-                    {
-                        Quaternion q = Quaternion.LookRotation(m_rightHand.transform.right);
-                        TryFire(true, trs.position, q, m_rightHand.transform.forward);
-                    }
+                    m_prevRightRight = m_rightHand.transform.right;
+                    m_prevRightForward = m_rightHand.transform.forward;
+                    m_prevRightPos = m_rightHand.transform.position;
                 }
             }
-            */
 
-            // Update head
+            if (CanFire() == true)
+            {
+                //Quaternion q = Quaternion.LookRotation(-m_rightHand.transform.right);
+                //TryFire(true, trs.position, q, m_rightHand.transform.forward);
+                if (m_isUsingHands)
+                {
+                    Quaternion q = Quaternion.LookRotation(-m_prevRightRight);
+                    TryFire(true, m_prevRightPos, q, m_prevRightForward);
+                }
+                else
+                {
+                    Quaternion q = Quaternion.LookRotation(m_rightHand.transform.right);
+                    TryFire(true, trs.position, q, m_rightHand.transform.forward);
+                }
+            }
+        }
+        */
+
+        if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.LTouch))
+        {
+            //Vector3 cPos = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch);
+            //Quaternion cRot = OVRInput.GetLocalControllerRotation(OVRInput.Controller.LTouch);
+            GameObject trackingSpace = m_cameraRig.transform.Find("TrackingSpace").gameObject;
+            Vector3 cPos = trackingSpace.transform.TransformPoint(OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch));
+            Vector3 cRot = trackingSpace.transform.TransformDirection(OVRInput.GetLocalControllerRotation(OVRInput.Controller.LTouch).eulerAngles);
+            TryFire(true, cPos, Quaternion.Euler(cRot), Vector3.zero);
+        }
+        else
+        {
+            //m_rightIsFiring = false;
+        }
+
+        if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger))
+        {
+            //Vector3 cPos = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
+            //Quaternion cRot = OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch);
+            //TryFire(true, m_localPlayerHead.transform.position + cPos, cRot, Vector3.zero);
+            GameObject trackingSpace = m_cameraRig.transform.Find("TrackingSpace").gameObject;
+            Vector3 cPos = trackingSpace.transform.TransformPoint(OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch));
+            Vector3 cRot = trackingSpace.transform.TransformDirection(OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch).eulerAngles);
+            TryFire(true, cPos, Quaternion.Euler(cRot), Vector3.zero);
+        }
+
+        //PointerPose.localPosition = _handState.PointerPose.Position.FromFlippedZVector3f();
+        //PointerPose.localRotation = _handState.PointerPose.Orientation.FromFlippedZQuatf();
+
+        // Update head
 #if UNITY_EDITOR
 #else
         //---

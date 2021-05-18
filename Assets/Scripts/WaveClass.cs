@@ -263,7 +263,8 @@ public class WaveClass
 
         orientation = Quaternion.LookRotation(from.transform.position - point);
 
-        float h = Random.Range(1.0f, 3.0f);
+        //float h = Random.Range(1.0f, 3.0f);
+        float h = Random.Range(2.0f, 4.0f); // Higher in the air so pointing is easier.
         point.y += h;
     }
 

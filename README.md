@@ -10,11 +10,14 @@ This is using Unity 2019.4.14f1
 The IP adress set in the scene is the host adress.  
 It means you need to start the headset with this IP **first** so it will start as the host.  
 Other headset will then try to connect to this IP when launching the game.  
-To find headset IP's use the command:
+To find headset IP's use the command on Quest 1:
 ```
 adb shell netcfg
 ```
-
+Or the following on Quest 2:
+```
+adb shell ip route
+```
 ---------------------------------------------
 ## Mobs
 They are prefabs with a list of parts that determines their ability.  
