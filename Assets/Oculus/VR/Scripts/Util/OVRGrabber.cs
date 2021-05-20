@@ -172,12 +172,15 @@ public class OVRGrabber : MonoBehaviour
 		float prevFlex = m_prevFlex;
         // Update values from inputs
         // JowModif: if a hand is present take finger pinching force
-        if (m_hand != null)
+        if ((m_controller == OVRInput.Controller.LHand) || (m_controller == OVRInput.Controller.RHand))
         {
-            //m_prevFlex = m_hand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
-            float middle = m_hand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
-            float index = m_hand.GetFingerPinchStrength(OVRHand.HandFinger.Index);
-            m_prevFlex = (middle + index) * 0.5f;
+            if (m_hand != null)
+            {
+                //m_prevFlex = m_hand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
+                float middle = m_hand.GetFingerPinchStrength(OVRHand.HandFinger.Middle);
+                float index = m_hand.GetFingerPinchStrength(OVRHand.HandFinger.Index);
+                m_prevFlex = (middle + index) * 0.5f;
+            }
         }
         else
         {

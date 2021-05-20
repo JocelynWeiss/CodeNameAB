@@ -123,5 +123,21 @@ namespace OculusSampleFramework
                 grabbedBy.ForceRelease(this);
             }
         }
+
+
+        /*
+        // Jow: Just so we can clearly see if the colliders are working
+        private void OnTriggerEnter(Collider other)
+        {
+            Highlight = true;
+        }
+
+
+        // Jow: Just so we can clearly see if the colliders are working
+        private void OnTriggerExit(Collider other)
+        {
+            Highlight = false;
+        }
+        */
     }
 }

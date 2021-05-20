@@ -71,8 +71,7 @@ public class BonusNet : NetworkBehaviour
                 //m_grabbable.m_lastGrabbed = 0.0f; // Jow: don't force this is still being grabbed
                 if (m_rb)
                 {
-                    //if (m_rb.angularVelocity.magnitude > 10.0f)
-                    if (m_rb.angularVelocity.magnitude > 30.0f)
+                    if (m_rb.angularVelocity.magnitude > 40.0f)
                     {
                         TriggerBonus2();
                     }

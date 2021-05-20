@@ -30,10 +30,12 @@ public class HandsMirror : NetworkBehaviour
         GameMan.s_instance.RegisterHand(this, hasAuthority);
 
         // Hide hands for local player as they are rendered from OVRHand
+        /*
         if (hasAuthority)
         {
             m_renderer.enabled = false;
         }
+        */
     }
 
 

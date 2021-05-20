@@ -2,7 +2,7 @@
  Testing Mirror  
 This is using Unity 2019.4.14f1  
 
-#### Version 0.245
+#### Version 0.246
 
 
 ---------------------------------------------
@@ -70,6 +70,8 @@ Adds dropped bonus to catch. **WIP**
 Fix for the client to be able to grab Bonuses.  
 ##### Version 0.245
 Adds death + Big clock + Fix elements positions + Bullet hitting eachother + Trigger elements by shaking.  
+##### Version 0.246
+Remove hands tracking to play with controllers for more precision.  
 
 
 

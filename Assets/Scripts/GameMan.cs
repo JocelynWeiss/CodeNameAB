@@ -69,12 +69,15 @@ public class GameMan : MonoBehaviour
     public OVRCameraRig m_cameraRig;
     [HideInInspector] public OVRScreenFade m_fader;
     [HideInInspector] public CamShakeScript m_shaker;
+    [HideInInspector] public GameObject m_trackingSpace;
 
     bool m_rightIsFiring = false;
     bool m_leftIsFiring = false;
+    Quaternion m_prevLeftQuat;
     Vector3 m_prevLeftRight;
     Vector3 m_prevLeftForward;
     Vector3 m_prevLeftPos;
+    Quaternion m_prevRightQuat;
     Vector3 m_prevRightRight;
     Vector3 m_prevRightForward;
     Vector3 m_prevRightPos;
@@ -142,7 +145,7 @@ public class GameMan : MonoBehaviour
 
         // Set up the local player
         m_cameraRig = GameObject.Find("OVRCameraRig").gameObject.GetComponent<OVRCameraRig>();
-        //m_localTrackingSpace = rig.transform.Find("TrackingSpace").gameObject;
+        m_trackingSpace = m_cameraRig.transform.Find("TrackingSpace").gameObject;
         m_localPlayerHead = m_cameraRig.transform.Find("TrackingSpace/CenterEyeAnchor").gameObject;
         // Grab hands
         m_leftHand = GameObject.Find("OVRCameraRig/TrackingSpace/LeftHandAnchor/LeftControllerAnchor/OVRHandPrefab").GetComponent<OVRHand>();
@@ -619,6 +622,8 @@ public class GameMan : MonoBehaviour
 
     private void FixedUpdate()
     {
+        OVRInput.FixedUpdate();
+
         if (m_curRotForce != 0.0f)
         {
             m_myAvatar.transform.RotateAround(m_myAvatar.transform.position, Vector3.up, m_curRotForce * Time.fixedDeltaTime);
@@ -646,15 +651,21 @@ public class GameMan : MonoBehaviour
         if (m_myAvatar == null)
             return;
 
-        if (m_leftIsFiring)
+        m_prevLeftForward = m_prevLeftQuat * Vector3.forward;
+        m_prevLeftRight = m_prevLeftQuat * Vector3.right;
+        m_prevRightForward = m_prevRightQuat * Vector3.forward;
+        m_prevRightRight = m_prevRightQuat * Vector3.right;
+
+        if (CanFire())
         {
-            Quaternion q = Quaternion.LookRotation(m_prevLeftRight);
-            TryFire(false, m_prevLeftPos, q, m_prevLeftForward);
-        }
-        if (m_rightIsFiring)
-        {
-            Quaternion q = Quaternion.LookRotation(m_prevRightRight);
-            TryFire(true, m_prevRightPos, q, m_prevRightForward);
+            if (m_leftIsFiring)
+            {
+                TryFire(false, m_prevLeftPos, m_prevLeftQuat, m_prevLeftRight);
+            }
+            if (m_rightIsFiring)
+            {
+                TryFire(true, m_prevRightPos, m_prevRightQuat, m_prevRightRight);
+            }
         }
 
         //---
@@ -748,7 +759,7 @@ public class GameMan : MonoBehaviour
                 m_rightHandMirror.transform.SetPositionAndRotation(m_rightHand.transform.position, m_rightHand.transform.rotation);
                 m_leftHandMirror.transform.SetPositionAndRotation(m_leftHand.transform.position, m_leftHand.transform.rotation);
 
-                m_debugLines.SetLine(0, m_prevRightPos, m_prevRightPos + m_prevRightForward * 50.0f, Color.blue); // JowNext: check but right
+                m_debugLines.SetLine(0, m_prevRightPos, m_prevRightPos + m_prevRightForward * 50.0f, Color.blue); // check but right
                 m_debugLines.SetLine(1, m_prevRightPos, m_prevRightPos + m_prevRightRight * 50.0f, Color.red); // OK but forward
 
                 m_debugLines.SetLine(2, m_prevLeftPos, m_prevLeftPos + m_prevLeftForward * 50.0f, Color.blue);
@@ -760,17 +771,10 @@ public class GameMan : MonoBehaviour
             }
             else
             {
-                Vector3 pos = m_myAvatar.transform.position;
-                Quaternion q = m_myAvatar.transform.rotation;
-                Vector3 r = m_myAvatar.transform.right * 0.2f;
-                Vector3 l = m_myAvatar.transform.right * -0.2f;
-                m_rightHandMirror.transform.SetPositionAndRotation(pos + r, q);
-                m_leftHandMirror.transform.SetPositionAndRotation(pos + l, q);
-
-                //m_rightHandMirror.transform.localScale *= 0.1f; // It seems the whole transform is sync anyway
-
-                m_debugLines.SetLine(0, m_rightHandMirror.transform.position, m_rightHandMirror.transform.position + m_myAvatar.transform.forward * 50.0f, Color.green);
-                m_debugLines.SetLine(1, m_leftHandMirror.transform.position, m_leftHandMirror.transform.position + m_myAvatar.transform.forward * 50.0f, Color.red);
+                m_rightHandMirror.transform.SetPositionAndRotation(m_prevRightPos, m_prevRightQuat);
+                m_leftHandMirror.transform.SetPositionAndRotation(m_prevLeftPos, m_prevLeftQuat);
+                //m_debugLines.SetLine(0, m_prevRightPos, m_prevRightPos + m_prevRightForward * 50.0f, Color.green);
+                //m_debugLines.SetLine(1, m_prevLeftPos, m_prevLeftPos + m_prevLeftForward * 50.0f, Color.red);
             }
         }
 
@@ -965,6 +969,8 @@ public class GameMan : MonoBehaviour
     void Update()
     {
         //m_logTitle.text = $"{Time.fixedTime}s\n{m_netMan.networkAddress}\n{m_lastConnected}s"; // Connexion timer
+
+        OVRInput.Update();
 
         /*
         if (m_myAvatar)
@@ -1537,33 +1543,50 @@ public class GameMan : MonoBehaviour
         }
         */
 
+        // Update controller pos/rot in world space
+        m_prevLeftPos = m_trackingSpace.transform.TransformPoint(OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch));
+        Vector3 cRot = m_trackingSpace.transform.TransformDirection(OVRInput.GetLocalControllerRotation(OVRInput.Controller.LTouch).eulerAngles);
+        m_prevLeftQuat = Quaternion.Euler(cRot);
+
+        m_prevRightPos = m_trackingSpace.transform.TransformPoint(OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch));
+        cRot = m_trackingSpace.transform.TransformDirection(OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch).eulerAngles);
+        m_prevRightQuat = Quaternion.Euler(cRot);
+
         if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.LTouch))
         {
-            //Vector3 cPos = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch);
-            //Quaternion cRot = OVRInput.GetLocalControllerRotation(OVRInput.Controller.LTouch);
-            GameObject trackingSpace = m_cameraRig.transform.Find("TrackingSpace").gameObject;
-            Vector3 cPos = trackingSpace.transform.TransformPoint(OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch));
-            Vector3 cRot = trackingSpace.transform.TransformDirection(OVRInput.GetLocalControllerRotation(OVRInput.Controller.LTouch).eulerAngles);
-            TryFire(true, cPos, Quaternion.Euler(cRot), Vector3.zero);
+            m_leftIsFiring = true;
+        }
+        else
+        {
+            m_leftIsFiring = false;
+        }
+
+        if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger))
+        {
+            m_rightIsFiring = true;
+        }
+        else
+        {
+            m_rightIsFiring = false;
+        }
+
+        if (OVRInput.Get(OVRInput.Button.SecondaryHandTrigger))
+        {
+            //m_rightIsFiring = true;
         }
         else
         {
             //m_rightIsFiring = false;
         }
 
-        if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger))
+        if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger))
         {
-            //Vector3 cPos = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
-            //Quaternion cRot = OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch);
-            //TryFire(true, m_localPlayerHead.transform.position + cPos, cRot, Vector3.zero);
-            GameObject trackingSpace = m_cameraRig.transform.Find("TrackingSpace").gameObject;
-            Vector3 cPos = trackingSpace.transform.TransformPoint(OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch));
-            Vector3 cRot = trackingSpace.transform.TransformDirection(OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch).eulerAngles);
-            TryFire(true, cPos, Quaternion.Euler(cRot), Vector3.zero);
+            //m_leftIsFiring = true;
         }
-
-        //PointerPose.localPosition = _handState.PointerPose.Position.FromFlippedZVector3f();
-        //PointerPose.localRotation = _handState.PointerPose.Orientation.FromFlippedZQuatf();
+        else
+        {
+            //m_leftIsFiring = false;
+        }
 
         // Update head
 #if UNITY_EDITOR
