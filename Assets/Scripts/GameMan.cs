@@ -1663,9 +1663,8 @@ public class GameMan : MonoBehaviour
                 }
             case Elements.Fire:
                 {
-                    m_rightRPS = 0.2f;
-                    m_leftRPS = 0.2f;
-                    StartCoroutine(RestoreRPS(8.0f, true, true, 1.0f));
+                    m_myAvatar.m_ammoCount += 50;
+                    AudioSource.PlayClipAtPoint(m_audioSounds[10], m_myAvatar.transform.position);
                     break;
                 }
             case Elements.Air:
