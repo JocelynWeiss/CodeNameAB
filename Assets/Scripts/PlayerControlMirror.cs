@@ -72,6 +72,8 @@ public class PlayerControlMirror : NetworkBehaviour
 
         m_renderer.material.color = m_syncColor;
 
+        GameMan.s_instance.m_playerLifeBar.m_maximum = (int)m_curLife;
+
         GameMan.s_instance.RegisterNewPlayer(this.gameObject, hasAuthority);
 
         // Spawn hands
@@ -315,8 +317,10 @@ public class PlayerControlMirror : NetworkBehaviour
         JowLogger.Log($"netId {netId}, newWaveNb = {newWaveNb}, hasAuthority {hasAuthority}");
         GameMan.s_instance.m_waveNb = newWaveNb;
         m_ammoCount = 100;
-        m_curLife = 1000.0f;
-        GameMan.s_instance.m_playerLifeBar.m_maximum = (int)m_curLife;
+        if (GameMan.s_instance.m_refillHealthEachWave)
+        {
+            m_curLife = 1000.0f;
+        }
         GameMan.s_instance.m_playerLifeBar.m_cur = m_curLife;
         GameMan.s_instance.SetPlayerInfoText();
         GameMan.s_instance.m_logTitle.text = "";

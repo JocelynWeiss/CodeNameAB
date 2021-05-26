@@ -37,6 +37,7 @@ public class GameMan : MonoBehaviour
     public int m_minPlayerNb = 2; // Minimum player number required to launch first wave
     public float m_firstWaveDelay = 10.0f; // seconds before launching first wave
     public float m_endOfWaveDelay = 8.0f; // seconds the game is still running after all mobs death.
+    public bool m_refillHealthEachWave = false;
 
     public List<PlayerControlMirror> m_allPlayers = new List<PlayerControlMirror>();
     private float m_lastConnected = 0.0f;
@@ -749,7 +750,10 @@ public class GameMan : MonoBehaviour
         //if ((m_isUsingHands) && (m_myAvatar.isLocalPlayer)) // To be able to control head from keyboard
         if (m_myAvatar.isLocalPlayer)
         {
-            m_myAvatar.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
+            if (UnityEditor.EditorApplication.isPlaying == false)
+            {
+                m_myAvatar.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
+            }
         }
 #endif
         if (m_myAvatar.isLocalPlayer)
