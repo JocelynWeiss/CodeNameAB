@@ -364,7 +364,8 @@ public class PlayerControlMirror : NetworkBehaviour
     {
         JowLogger.Log($"netId {netId}, newWaveNb = {newWaveNb}, hasAuthority {hasAuthority}");
         GameMan.s_instance.m_waveNb = newWaveNb;
-        m_ammoCount = 100;
+        if (m_ammoCount < 100)
+            m_ammoCount = 100;
         if (GameMan.s_instance.m_refillHealthEachWave)
         {
             m_curLife = 1000.0f;
