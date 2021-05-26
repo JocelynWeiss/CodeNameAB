@@ -23,6 +23,8 @@ public class PlayerControlMirror : NetworkBehaviour
     public PillarMirror m_myPillar;
     public List<ElementsNet> m_myElems = new List<ElementsNet>();
 
+    public List<BuffClass> m_allBuffs = new List<BuffClass>();
+
 
     public override void OnStartClient()
     {
@@ -146,6 +148,52 @@ public class PlayerControlMirror : NetworkBehaviour
         else
         {
             CmdChangeAvatarColour();
+        }
+    }
+
+
+    private void FixedUpdate()
+    {
+        System.DateTime date = System.DateTime.Now;
+        double currTime = date.ToOADate();
+        List<BuffClass> buffEnded = new List<BuffClass>();
+
+        foreach (BuffClass buff in m_allBuffs)
+        {
+            System.DateTime endDate = System.DateTime.FromOADate(buff.m_startTime).AddSeconds(buff.m_duration);
+            double end = endDate.ToOADate();
+            if (currTime > buff.m_startTime)
+            {
+                if (currTime < end)
+                {
+                    ExecuteBuff(buff);
+                }
+                else
+                {
+                    buffEnded.Add(buff);
+                }
+            }
+        }
+
+        // Remove ended buffs
+        foreach (BuffClass buff in buffEnded)
+        {
+            m_allBuffs.Remove(buff);
+        }
+    }
+
+
+    // Execute a buff (garanteed to be in its laps time)
+    void ExecuteBuff(BuffClass buff)
+    {
+        switch (buff.m_type)
+        {
+            case PlayerBuffs.Healing:
+                m_curLife += buff.m_power * Time.fixedDeltaTime;
+                m_curLife = Mathf.Clamp(m_curLife, 0.0f, GameMan.s_instance.m_playerLifeBar.m_maximum);
+                break;
+            default:
+                break;
         }
     }
 

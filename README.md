@@ -2,7 +2,7 @@
  Testing Mirror  
 This is using Unity 2019.4.14f1  
 
-#### Version 0.247
+#### Version 0.248
 
 
 ---------------------------------------------
@@ -74,6 +74,8 @@ Adds death + Big clock + Fix elements positions + Bullet hitting eachother + Tri
 Remove hands tracking to play with controllers for more precision.  
 ##### Version 0.247
 Add water system. Add a switch to refill health at the end of each waves.   
+##### Version 0.248
+Merge Big clock + 2 buildings. Add life bonus.   
 
 
 

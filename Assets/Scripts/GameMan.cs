@@ -25,6 +25,30 @@ public enum Elements
 }
 
 
+public enum PlayerBuffs
+{
+    Healing,
+    Armour,
+}
+
+
+public class BuffClass
+{
+    public PlayerBuffs m_type;
+    public double m_startTime; // AO date
+    public double m_duration; // in sec
+    public float m_power;
+
+    public BuffClass(PlayerBuffs type, double startTime, double duration, float power)
+    {
+        m_type = type;
+        m_startTime = startTime;
+        m_duration = duration;
+        m_power = power;
+    }
+}
+
+
 public class GameMan : MonoBehaviour
 {
     public static GameMan s_instance = null;
@@ -750,7 +774,7 @@ public class GameMan : MonoBehaviour
         //if ((m_isUsingHands) && (m_myAvatar.isLocalPlayer)) // To be able to control head from keyboard
         if (m_myAvatar.isLocalPlayer)
         {
-            if (UnityEditor.EditorApplication.isPlaying == false)
+            //if (UnityEditor.EditorApplication.isPlaying == false)
             {
                 m_myAvatar.transform.SetPositionAndRotation(m_localPlayerHead.transform.position, m_localPlayerHead.transform.rotation);
             }
@@ -1646,9 +1670,8 @@ public class GameMan : MonoBehaviour
                 }
             case Elements.Air:
                 {
-                    m_rightRPS = 0.2f;
-                    m_leftRPS = 0.2f;
-                    StartCoroutine(RestoreRPS(8.0f, true, true, 1.0f));
+                    BuffClass buff = new BuffClass(PlayerBuffs.Healing, System.DateTime.Now.ToOADate(), 5.0, 200.0f);
+                    m_myAvatar.m_allBuffs.Add(buff);
                     break;
                 }
         }
