@@ -79,6 +79,8 @@ public class GameMan : MonoBehaviour
     public WaveClass m_wave; // The current mobs wave
     public JowProgressBar m_playerLifeBar;
     public TextMeshProUGUI m_playerInfoText;
+    public GameObject m_bigHand; // JowNext: Link this + animate
+    public GameObject m_smallHand;
 
     private bool m_isUsingHands = false;
     private GameObject m_localPlayerHead;
@@ -717,6 +719,8 @@ public class GameMan : MonoBehaviour
             }
         }
         */
+
+        RotateClockHands();
 
         if (m_nextWaveDate > System.DateTime.Now.ToOADate())
         {
@@ -1637,6 +1641,17 @@ public class GameMan : MonoBehaviour
         }
         */
 #endif
+    }
+
+
+    // Called every fixedFrame for the clock
+    void RotateClockHands()
+    {
+        if ((m_bigHand == null) || (m_smallHand == null))
+            return;
+
+        m_bigHand.transform.RotateAround(m_bigHand.transform.position, m_bigHand.transform.forward, Time.fixedDeltaTime * 10.0f);
+        m_smallHand.transform.RotateAround(m_smallHand.transform.position, m_smallHand.transform.forward, Time.fixedDeltaTime * 100.0f);
     }
 
 

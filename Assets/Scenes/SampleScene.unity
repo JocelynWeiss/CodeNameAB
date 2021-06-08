@@ -1833,6 +1833,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7d798564561524a4f8e928bf53c13f2a, type: 3}
+--- !u!1 &635222724 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 376556725852259378, guid: 7d798564561524a4f8e928bf53c13f2a,
+    type: 3}
+  m_PrefabInstance: {fileID: 635222723}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &635222725 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 677395466945996032, guid: 7d798564561524a4f8e928bf53c13f2a,
+    type: 3}
+  m_PrefabInstance: {fileID: 635222723}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &653260035
 GameObject:
   m_ObjectHideFlags: 0
@@ -2639,6 +2651,8 @@ MonoBehaviour:
   m_nextWaveDate: 0
   m_playerLifeBar: {fileID: 1433800530}
   m_playerInfoText: {fileID: 1930667003}
+  m_bigHand: {fileID: 635222725}
+  m_smallHand: {fileID: 635222724}
   m_cameraRig: {fileID: 0}
   m_fader: {fileID: 0}
   m_shaker: {fileID: 0}
